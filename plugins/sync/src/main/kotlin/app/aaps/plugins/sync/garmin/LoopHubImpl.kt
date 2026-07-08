@@ -5,11 +5,11 @@ import app.aaps.core.data.model.GV
 import app.aaps.core.data.model.GlucoseUnit
 import app.aaps.core.data.model.HR
 import app.aaps.core.data.model.RM
-import app.aaps.core.data.model.TE
 import app.aaps.core.data.ue.Action
 import app.aaps.core.data.ue.Sources
 import app.aaps.core.data.ue.ValueWithUnit
 import app.aaps.core.interfaces.aps.Loop
+import app.aaps.core.interfaces.bolus.WizardBolusExecutor
 import app.aaps.core.interfaces.constraints.ConstraintsChecker
 import app.aaps.core.interfaces.db.PersistenceLayer
 import app.aaps.core.interfaces.db.ProcessedTbrEbData
@@ -17,11 +17,9 @@ import app.aaps.core.interfaces.di.ApplicationScope
 import app.aaps.core.interfaces.iob.IobCobCalculator
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
-import app.aaps.core.interfaces.logging.UserEntryLogger
 import app.aaps.core.interfaces.profile.Profile
 import app.aaps.core.interfaces.profile.ProfileFunction
 import app.aaps.core.interfaces.profile.ProfileUtil
-import app.aaps.core.interfaces.pump.DetailedBolusInfo
 import app.aaps.core.interfaces.queue.CommandQueue
 import app.aaps.core.keys.StringKey
 import app.aaps.core.keys.UnitDoubleKey
@@ -49,9 +47,9 @@ class LoopHubImpl @Inject constructor(
     private val profileFunction: ProfileFunction,
     private val profileUtil: ProfileUtil,
     private val persistenceLayer: PersistenceLayer,
-    private val userEntryLogger: UserEntryLogger,
     private val preferences: Preferences,
     private val processedTbrEbData: ProcessedTbrEbData,
+    private val wizardBolusExecutor: WizardBolusExecutor,
     @ApplicationScope private val appScope: CoroutineScope
 ) : LoopHub {
 
@@ -97,7 +95,7 @@ class LoopHubImpl @Inject constructor(
     override val temporaryBasal: Double
         get() {
             return currentProfile?.let {
-                val tb = processedTbrEbData.getTempBasalIncludingConvertedExtended(clock.millis())
+                val tb = runBlocking { processedTbrEbData.getTempBasalIncludingConvertedExtended(clock.millis()) }
                 tb?.convertedToPercent(clock.millis(), it)?.div(100.0)
             } ?: Double.NaN
         }
@@ -116,8 +114,8 @@ class LoopHubImpl @Inject constructor(
     override fun connectPump() {
         appScope.launch {
             persistenceLayer.cancelCurrentRunningMode(clock.millis(), Action.RECONNECT, Sources.Garmin)
+            commandQueue.cancelTempBasal(enforceNew = true)
         }
-        commandQueue.cancelTempBasal(enforceNew = true, callback = null)
     }
 
     /** Tells the loop algorithm that the pump will be physically disconnected
@@ -147,17 +145,15 @@ class LoopHubImpl @Inject constructor(
         aapsLogger.info(LTag.GARMIN, "post $carbohydrates g carbohydrates")
         val carbsAfterConstraints =
             carbohydrates.coerceAtMost(constraintChecker.getMaxCarbsAllowed().value())
-        userEntryLogger.log(
-            action = Action.CARBS,
-            source = Sources.Garmin,
-            note = null,
-            listValues = listOf(ValueWithUnit.Gram(carbsAfterConstraints))
-        )
-        val detailedBolusInfo = DetailedBolusInfo().apply {
-            eventType = TE.Type.CARBS_CORRECTION
-            carbs = carbsAfterConstraints.toDouble()
+        // Instant carbs now ride the shared executor (one audited path); it logs the user entry + delivers.
+        appScope.launch {
+            wizardBolusExecutor.deliverCarbs(
+                carbs = carbsAfterConstraints,
+                note = null,
+                source = Sources.Garmin,
+                onError = { aapsLogger.error(LTag.GARMIN, "carbs delivery failed: $it") }
+            )
         }
-        commandQueue.bolus(detailedBolusInfo, null)
     }
 
     /** Stores hear rate readings that a taken and averaged of the given interval. */

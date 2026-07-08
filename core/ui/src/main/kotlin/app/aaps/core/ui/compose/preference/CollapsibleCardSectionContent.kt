@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import app.aaps.core.ui.R
+import app.aaps.core.ui.compose.ExcludeFromJacocoGeneratedReport
 
 /**
  * Composable for a collapsible card section.
@@ -46,6 +47,7 @@ fun CollapsibleCardSectionContent(
     expanded: Boolean,
     onToggle: () -> Unit,
     icon: ImageVector? = null,
+    collapsible: Boolean = true,
     content: @Composable () -> Unit
 ) {
     val theme = LocalPreferenceTheme.current
@@ -65,11 +67,12 @@ fun CollapsibleCardSectionContent(
                 expanded = expanded,
                 onToggle = onToggle,
                 insideCard = true,
-                icon = icon
+                icon = icon,
+                collapsible = collapsible
             )
 
             AnimatedVisibility(
-                visible = expanded,
+                visible = expanded || !collapsible,
                 enter = expandVertically(),
                 exit = shrinkVertically()
             ) {
@@ -81,6 +84,7 @@ fun CollapsibleCardSectionContent(
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview(showBackground = true)
 @Composable
 private fun CollapsibleCardSectionContentPreview() {

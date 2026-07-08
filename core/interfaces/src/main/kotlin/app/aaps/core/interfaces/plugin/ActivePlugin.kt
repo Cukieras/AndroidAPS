@@ -4,15 +4,14 @@ import android.content.Context
 import app.aaps.core.data.plugin.PluginType
 import app.aaps.core.interfaces.aps.APS
 import app.aaps.core.interfaces.aps.Sensitivity
+import app.aaps.core.interfaces.calibration.Calibration
 import app.aaps.core.interfaces.constraints.Objectives
 import app.aaps.core.interfaces.constraints.Safety
 import app.aaps.core.interfaces.iob.IobCobCalculator
-
 import app.aaps.core.interfaces.pump.Pump
 import app.aaps.core.interfaces.pump.PumpWithConcentration
 import app.aaps.core.interfaces.smoothing.Smoothing
 import app.aaps.core.interfaces.source.BgSource
-import app.aaps.core.interfaces.sync.NsClient
 import app.aaps.core.interfaces.sync.Sync
 
 interface ActivePlugin {
@@ -70,9 +69,10 @@ interface ActivePlugin {
     val activeSmoothing: Smoothing
 
     /**
-     *  Currently selected NsClient plugin
+     *  Calibration plugin (per-sensor override on top of factory-calibrated values).
+     *  Defaults to no-op when no override plugin is enabled.
      */
-    val activeNsClient: NsClient?
+    val activeCalibration: Calibration
 
     /**
      *  Currently selected Sync plugin

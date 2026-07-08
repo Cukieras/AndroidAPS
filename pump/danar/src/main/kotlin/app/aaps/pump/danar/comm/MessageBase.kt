@@ -1,7 +1,7 @@
 package app.aaps.pump.danar.comm
 
 import app.aaps.core.interfaces.configuration.ConfigBuilder
-import app.aaps.core.interfaces.constraints.ConstraintsChecker
+import app.aaps.core.interfaces.di.ApplicationScope
 import app.aaps.core.interfaces.insulin.ConcentrationHelper
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
@@ -24,6 +24,7 @@ import app.aaps.pump.danarkorean.DanaRKoreanPlugin
 import app.aaps.pump.danarv2.DanaRv2Plugin
 import app.aaps.pump.utils.CRC.getCrc16
 import dagger.android.HasAndroidInjector
+import kotlinx.coroutines.CoroutineScope
 import org.joda.time.DateTime
 import org.joda.time.IllegalInstantException
 import java.nio.charset.StandardCharsets
@@ -51,13 +52,13 @@ open class MessageBase(injector: HasAndroidInjector) {
     @Inject lateinit var commandQueue: CommandQueue
     @Inject lateinit var detailedBolusInfoStorage: DetailedBolusInfoStorage
     @Inject lateinit var temporaryBasalStorage: TemporaryBasalStorage
-    @Inject lateinit var constraintChecker: ConstraintsChecker
     @Inject lateinit var pumpSync: PumpSync
     @Inject lateinit var danaHistoryRecordDao: DanaHistoryRecordDao
     @Inject lateinit var uiInteraction: UiInteraction
     @Inject lateinit var notificationManager: NotificationManager
     @Inject lateinit var ch: ConcentrationHelper
     @Inject lateinit var bolusProgressData: BolusProgressData
+    @Inject @ApplicationScope lateinit var appScope: CoroutineScope
 
     var injector: HasAndroidInjector
     var buffer = ByteArray(512)

@@ -21,6 +21,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -41,8 +42,8 @@ import app.aaps.plugins.configuration.R
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.kotlin.plusAssign
-import kotlin.math.max
-import kotlin.math.min
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 fun SetupWizardScreen(
@@ -56,6 +57,9 @@ fun SetupWizardScreen(
     onManageInsulin: () -> Unit,
     onManageProfile: () -> Unit,
     onProfileSwitch: () -> Unit,
+    onOpenAuthorizedClients: () -> Unit,
+    onPairWithMaster: () -> Unit,
+    onOpenNsReceiveSettings: () -> Unit,
     onRunObjectives: () -> Unit,
     onRequestDirectoryAccess: () -> Unit,
     onRequestPermission: (app.aaps.core.interfaces.plugin.PermissionGroup) -> Unit,
@@ -72,6 +76,9 @@ fun SetupWizardScreen(
         swDefinition.onManageInsulin = onManageInsulin
         swDefinition.onManageProfile = onManageProfile
         swDefinition.onProfileSwitch = onProfileSwitch
+        swDefinition.onOpenAuthorizedClients = onOpenAuthorizedClients
+        swDefinition.onPairWithMaster = onPairWithMaster
+        swDefinition.onOpenNsReceiveSettings = onOpenNsReceiveSettings
         swDefinition.onRunObjectives = onRunObjectives
         swDefinition.onRequestDirectoryAccess = onRequestDirectoryAccess
         swDefinition.onRequestPermission = onRequestPermission
@@ -85,6 +92,9 @@ fun SetupWizardScreen(
             swDefinition.onManageInsulin = null
             swDefinition.onManageProfile = null
             swDefinition.onProfileSwitch = null
+            swDefinition.onOpenAuthorizedClients = null
+            swDefinition.onPairWithMaster = null
+            swDefinition.onOpenNsReceiveSettings = null
             swDefinition.onRunObjectives = null
             swDefinition.onRequestDirectoryAccess = null
             swDefinition.onRequestPermission = null
@@ -118,31 +128,39 @@ fun SetupWizardScreen(
     // Read updateTick to subscribe to recomposition
     @Suppress("UNUSED_EXPRESSION") updateTick
 
-    // Calculate visible screens
-    val visibleScreens = remember(screens, updateTick) {
-        screens.filter { it.visibility == null || it.visibility?.invoke() == true }
+    // Calculate visible screens off the main thread. Some screen visibility predicates do blocking
+    // I/O (e.g. reading/parsing exported preference files, runBlocking profile lookups) which would
+    // otherwise stall composition and trigger an ANR. Until the first async pass completes, all
+    // screens are treated as visible; the previous result is retained across recomputations.
+    val visibleScreens by produceState(initialValue = screens, screens, updateTick) {
+        value = withContext(Dispatchers.IO) {
+            screens.filter { it.visibility == null || it.visibility?.invoke() == true }
+        }
     }
-    val visibleIndex = remember(currentPage, visibleScreens, updateTick) {
+    val visibleIndex = remember(currentPage, visibleScreens) {
         val currentScreen = screens.getOrNull(currentPage)
         visibleScreens.indexOf(currentScreen).coerceAtLeast(0)
     }
 
+    // Scan from the current page using the precomputed visible set (instead of re-invoking
+    // visibility() and its I/O). Preserves the original forward/backward semantics: skip hidden
+    // screens, and stay on the current page when there is no visible screen in that direction.
     fun nextPage(): Int {
         var page = currentPage + 1
         while (page < screens.size) {
-            if (screens[page].visibility == null || screens[page].visibility?.invoke() == true) return page
+            if (screens[page] in visibleScreens) return page
             page++
         }
-        return min(currentPage, screens.size - 1)
+        return currentPage
     }
 
     fun previousPage(): Int {
         var page = currentPage - 1
         while (page >= 0) {
-            if (screens[page].visibility == null || screens[page].visibility?.invoke() == true) return page
+            if (screens[page] in visibleScreens) return page
             page--
         }
-        return max(currentPage, 0)
+        return currentPage
     }
 
     val currentScreen = screens.getOrNull(currentPage)

@@ -31,6 +31,8 @@
     <string name="pref_title_alert_carbs_required">Alerte si glucides requis</string>
     <string name="pref_title_alert_urgent_as_android_notification">Déclencher les alarmes urgentes vers les notifications Android</string>
     <string name="pref_title_alert_increase_volume">Augmenter progressivement le volume des notifications</string>
+    <string name="pref_title_alert_override_dnd">Outrepasser le mode Ne pas déranger</string>
+    <string name="pref_summary_alert_override_dnd">Lorsque cette option est activée, les alarmes AAPS s\'entendent en mode silencieux et ne pas déranger (flux d\'alarme). Lorsque désactivé, les alarmes respectent le mode silencieux/NPD (flux de notifications).</string>
     <!-- BG Source preferences -->
     <string name="pref_title_bg_source_upload_to_ns">Télécharger des Gly vers NS</string>
     <string name="pref_title_bg_source_create_sensor_change">Enreg. changement de capteur</string>
@@ -123,6 +125,8 @@
     <string name="pref_title_ns_slow_sync">Utiliser la synchro lente</string>
     <string name="pref_title_ns_use_ws">Utiliser les websockets</string>
     <string name="pref_summary_ns_use_ws">Utiliser les websockets pour communiquer en temps réel avec Nightscout.</string>
+    <string name="pref_title_ns_allow_client_control">Autoriser le contrôle client</string>
+    <string name="pref_summary_ns_allow_client_control">Laisser les appareils clients appariés envoyer des commandes signées (par exemple des scénarii de démarrage/arrêt) sur Nightscout.</string>
     <!-- OpenHumans preferences -->
     <string name="pref_title_openhumans_wifi_only">WiFi uniquement</string>
     <string name="pref_title_openhumans_charging_only">Charge uniquement</string>
@@ -145,9 +149,6 @@
     <string name="pref_summary_wear_notify_on_smb">Envoyer des notifications à la montre lorsqu\'un SMB est injecté.</string>
     <string name="pref_title_wear_broadcast_data">Diffuser les données à la montre</string>
     <string name="pref_summary_wear_broadcast_data">Diffuser des données AAPS à des applications montre tierces.</string>
-    <!-- Wizard preferences -->
-    <string name="pref_title_wizard_calculation_visible">Afficher le calcul de l\'assistant</string>
-    <string name="pref_title_wizard_correction_percent">Utiliser le pourcentage de correction</string>
     <!-- Site rotation preferences -->
     <string name="pref_title_site_rotation_manage_pump">Gérer la rotation du site de la pompe</string>
     <string name="pref_title_site_rotation_manage_cgm">Gérer la rotation du site MGC</string>
@@ -221,11 +222,17 @@
     <string name="pref_title_sms_remote_bolus_distance">Espacement minimal des bolus distants</string>
     <!-- IntKey: BG Source preferences -->
     <string name="pref_title_random_bg_interval">Intervalle Gly Aléatoire</string>
+    <string name="pref_title_random_bg_randomize">Données Gly aléatoires</string>
+    <string name="pref_summary_random_bg_randomize">Ajout de bruit, de sauts temporels, de flèches de variations et occasionnellement de glycémies aléatoires. A désactiver pour avoir une onde sinusoïdale propre avec la flèche de variation dérivée de la pente sinusoïdale.</string>
     <!-- IntKey: NS Client preferences -->
     <string name="pref_title_alarm_stale_data">Seuil d\'alarme sans nouvelle donnée Gly</string>
     <string name="pref_title_urgent_alarm_stale_data">Seuil d\'urgence sans nouvelle donnée Gly</string>
     <!-- IntKey: Site rotation preferences -->
     <string name="pref_title_site_rotation_profile">Profil utilisateur pour la rotation du site</string>
+    <!-- Body-type choices for the site-rotation user profile (man / woman / child body silhouette) -->
+    <string name="site_rotation_profile_man">Homme</string>
+    <string name="site_rotation_profile_woman">Femme</string>
+    <string name="site_rotation_profile_child">Enfant</string>
     <!-- StringKey: General preferences -->
     <string name="pref_title_units">Unités</string>
     <string name="units_mgdl">mg/dL</string>
@@ -254,6 +261,7 @@
     <string name="units_format_mgdl">%1$s mg/dL</string>
     <string name="units_format_double">%1$.1f</string>
     <string name="units_format_double_2">%1$.2f</string>
+    <string name="units_format_double_3">%1$.3f</string>
     <!-- Formatted unit strings with value and range -->
     <string name="units_format_grams_range">%1$d g (%2$d - %3$d)</string>
     <string name="units_format_min_range">%1$d m (%2$d - %3$d)</string>
@@ -268,6 +276,7 @@
     <string name="units_format_mgdl_range">%1$s mg/dL (%2$s - %3$s)</string>
     <string name="units_format_double_range">%1$.1f (%2$.1f - %3$.1f)</string>
     <string name="units_format_double_2_range">%1$.2f (%2$.2f - %3$.2f)</string>
+    <string name="units_format_double_3_range">%1$.3f (%2$.3f - %3$.3f)</string>
     <string name="pref_title_language">Langue</string>
     <string name="lang_default">Système</string>
     <string name="lang_en">Anglais</string>

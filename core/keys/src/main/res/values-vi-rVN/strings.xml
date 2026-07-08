@@ -31,6 +31,8 @@
     <string name="pref_title_alert_carbs_required">Cảnh báo khi cần bổ sung carb</string>
     <string name="pref_title_alert_urgent_as_android_notification">Cảnh báo khẩn cấp dưới dạng thông báo Android</string>
     <string name="pref_title_alert_increase_volume">Tăng dần âm lượng thông báo</string>
+    <string name="pref_title_alert_override_dnd">Bỏ qua chế độ Không làm phiền</string>
+    <string name="pref_summary_alert_override_dnd">Khi bật, báo động của AAPS sẽ phát âm thanh ngay cả trong chế độ im lặng và Không làm phiền (luồng báo động). Khi tắt, báo động sẽ tuân theo chế độ im lặng/Không làm phiền (luồng thông báo).</string>
     <!-- BG Source preferences -->
     <string name="pref_title_bg_source_upload_to_ns">Tải dữ liệu đường huyết lên NS</string>
     <string name="pref_title_bg_source_create_sensor_change">Ghi lại thay đổi cảm biến</string>
@@ -123,6 +125,8 @@
     <string name="pref_title_ns_slow_sync">Sử dụng đồng bộ chậm</string>
     <string name="pref_title_ns_use_ws">Sử dụng websockets</string>
     <string name="pref_summary_ns_use_ws">Sử dụng WebSocket để giao tiếp thời gian thực với Nightscout.</string>
+    <string name="pref_title_ns_allow_client_control">Cho phép thiết bị phụ điều khiển</string>
+    <string name="pref_summary_ns_allow_client_control">Cho phép các thiết bị phụ đã ghép đôi gửi các lệnh đã ký xác thực (ví dụ: bắt đầu/dừng ngữ cảnh) qua Nightscout.</string>
     <!-- OpenHumans preferences -->
     <string name="pref_title_openhumans_wifi_only">Chỉ dùng WiFi</string>
     <string name="pref_title_openhumans_charging_only">Chỉ sạc</string>
@@ -145,9 +149,6 @@
     <string name="pref_summary_wear_notify_on_smb">Gửi thông báo đến đồng hồ khi SMB được thực hiện.</string>
     <string name="pref_title_wear_broadcast_data">Gửi dữ liệu tới đồng hồ</string>
     <string name="pref_summary_wear_broadcast_data">Phát dữ liệu AAPS tới ứng dụng đồng hồ bên thứ ba qua intent.</string>
-    <!-- Wizard preferences -->
-    <string name="pref_title_wizard_calculation_visible">Hiển thị trình hướng dẫn tính toán</string>
-    <string name="pref_title_wizard_correction_percent">Sử dụng phần trăm hiệu chỉnh</string>
     <!-- Site rotation preferences -->
     <string name="pref_title_site_rotation_manage_pump">Quản lý luân chuyển vị trí bơm</string>
     <string name="pref_title_site_rotation_manage_cgm">Quản lý luân chuyển vị trí CGM</string>
@@ -221,11 +222,17 @@
     <string name="pref_title_sms_remote_bolus_distance">Khoảng tối thiểu bolus từ xa</string>
     <!-- IntKey: BG Source preferences -->
     <string name="pref_title_random_bg_interval">Khoảng thời gian BG ngẫu nhiên</string>
+    <string name="pref_title_random_bg_randomize">Dữ liệu BG ngẫu nhiên</string>
+    <string name="pref_summary_random_bg_randomize">Thêm nhiễu, làm lệch nhẹ dấu thời gian, ngẫu nhiên hóa mũi tên xu hướng và thỉnh thoảng tạo carb ngẫu nhiên. Tắt để dùng sóng sin xác định sạch với mũi tên xu hướng được suy ra từ độ dốc của sóng sin.</string>
     <!-- IntKey: NS Client preferences -->
     <string name="pref_title_alarm_stale_data">Ngưỡng báo động dữ liệu lỗi thời</string>
     <string name="pref_title_urgent_alarm_stale_data">Ngưỡng báo động khẩn cấp cho dữ liệu lỗi thời</string>
     <!-- IntKey: Site rotation preferences -->
     <string name="pref_title_site_rotation_profile">Cấu hình thay đổi vị trí tiêm</string>
+    <!-- Body-type choices for the site-rotation user profile (man / woman / child body silhouette) -->
+    <string name="site_rotation_profile_man">Nam</string>
+    <string name="site_rotation_profile_woman">Nữ</string>
+    <string name="site_rotation_profile_child">Trẻ em</string>
     <!-- StringKey: General preferences -->
     <string name="pref_title_units">Đơn vị</string>
     <string name="units_mgdl">mg/dl</string>
@@ -254,6 +261,7 @@
     <string name="units_format_mgdl">%1$s mg/dL</string>
     <string name="units_format_double">%1$.1f</string>
     <string name="units_format_double_2">%1$.2f</string>
+    <string name="units_format_double_3">%1$.3f</string>
     <!-- Formatted unit strings with value and range -->
     <string name="units_format_grams_range">%1$d g (%2$d - %3$d)</string>
     <string name="units_format_min_range">%1$d phút (%2$d - %3$d)</string>
@@ -268,6 +276,7 @@
     <string name="units_format_mgdl_range">%1$s mg/dL (%2$s - %3$s)</string>
     <string name="units_format_double_range">%1$.1f (%2$.1f - %3$.1f)</string>
     <string name="units_format_double_2_range">%1$.2f (%2$.2f - %3$.2f)</string>
+    <string name="units_format_double_3_range">%1$.3f (%2$.3f - %3$.3f)</string>
     <string name="pref_title_language">Ngôn ngữ</string>
     <string name="lang_default">Mặc định hệ thống</string>
     <string name="lang_en">Tiếng Anh</string>
@@ -354,7 +363,7 @@
     <string name="pref_title_max_basal">Tỷ lệ liều nền tối đa</string>
     <string name="openapsma_max_basal_summary">Giá trị này được gọi là liều nền tối đa trong ngữ cảnh OpenAPS</string>
     <string name="pref_title_smb_max_iob">IOB tối đa cho SMB</string>
-    <string name="openapssmb_max_iob_summary">Giá trị này được gọi là Max IOB trong ngữ cảnh OpenAPS.\nOpenAPS sẽ không bổ sung thêm insulin nếu IOB hiện tại lớn hơn giá trị này. Giá trị này cũng bị ảnh hưởng bởi loại bệnh nhân. 👍.</string>
+    <string name="openapssmb_max_iob_summary">Giá trị này được gọi là Max IOB trong ngữ cảnh OpenAPS.\nOpenAPS sẽ không bổ sung thêm insulin nếu IOB hiện tại lớn hơn giá trị này. Giá trị này cũng bị ảnh hưởng bởi loại bệnh nhân.</string>
     <string name="pref_title_ama_max_iob">IOB tối đa cho AMA</string>
     <string name="openapsma_max_iob_summary">Giá trị này được gọi là Max IOB trong ngữ cảnh OpenAPS.\nĐây là lượng insulin tối đa [U] mà APS có thể cung cấp trong một lần. Giá trị này cũng bị ảnh hưởng bởi loại bệnh nhân.</string>
     <string name="pref_title_max_daily_multiplier">Hệ số an toàn tối đa hằng ngày</string>

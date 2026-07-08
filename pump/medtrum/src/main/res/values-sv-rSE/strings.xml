@@ -11,7 +11,6 @@
     <string name="patch_not_active">Podden är inte aktiverad</string>
     <string name="pump_setting_failed">Kunde inte spara användarinställningarna till pumpen!</string>
     <!-- overview fragment -->
-    <string name="last_connection_label">Senast ansluten</string>
     <string name="active_bolus_label">Aktiv bolus</string>
     <string name="pump_state_label">Pumpstatus</string>
     <string name="active_alarms_label">Aktiva larm</string>
@@ -61,8 +60,6 @@
     <string name="step_retry_activation">Aktivering pågår</string>
     <string name="unexpected_state">Oväntat tillstånd: %1$s</string>
     <string name="patch_begin_activation">Ingen aktiv pod. Tryck på <b>Nästa</b> för att påbörja aktiveringsprocessen.</string>
-    <string name="patch_not_active_note">Pumpbas bör inte anslutas till podden förrän nästa steg!</string>
-    <string name="connect_pump_base">Anslut pumpbasen till en ny pod, ta bort kvarvarande luft och fyll med insulin, tryck sedan på <b>Nästa</b>.</string>
     <string name="note_min_70_units">Obs: Minst 70 enheter krävs för aktivering.</string>
     <string name="do_not_attach_to_body">Fäst inte podden på kroppen ännu.</string>
     <string name="half_press_needle">Halvtryck på nålknappen. Tryck sedan på <b>Nästa</b> för att börja prima.</string>

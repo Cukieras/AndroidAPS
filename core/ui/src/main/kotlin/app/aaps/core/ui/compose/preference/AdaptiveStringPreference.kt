@@ -15,9 +15,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import app.aaps.core.keys.StringKey
-import app.aaps.core.keys.interfaces.PreferenceVisibilityContext
 import app.aaps.core.keys.interfaces.StringPreferenceKey
 import app.aaps.core.keys.interfaces.StringValidator
+import app.aaps.core.keys.interfaces.VisibilityContext
+import app.aaps.core.ui.compose.ExcludeFromJacocoGeneratedReport
 
 /**
  * Composable string preference for use inside card sections.
@@ -32,7 +33,7 @@ fun AdaptiveStringPreferenceItem(
     titleResId: Int = 0,
     summaryResId: Int? = null,
     isPassword: Boolean = false,
-    visibilityContext: PreferenceVisibilityContext? = null
+    visibilityContext: VisibilityContext? = null
 ) {
     val effectiveTitleResId = if (titleResId != 0) titleResId else stringKey.titleResId
     val effectiveSummaryResId = summaryResId ?: stringKey.summaryResId
@@ -99,6 +100,7 @@ fun AdaptiveStringPreferenceItem(
     )
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview(showBackground = true)
 @Composable
 private fun AdaptiveStringPreferencePreview() {

@@ -15,6 +15,7 @@
     <string name="dana_model">%1$s\nModel: %2$02X\nProtocol: %3$02X\nCode: %4$02X</string>
     <string name="processinghistory">Processing event</string>
     <string name="danar_enableextendedbolus">Enable extended boluses on pump</string>
+    <string name="danar_disablebolusblock">Bolus block is enabled on the pump. AAPS cannot deliver insulin while it is active. Disable Bolus block in the pump settings.</string>
     <string name="overview_bolusprogress_stoped">Stopped</string>
     <string name="unsupportedfirmware">Unsupported pump firmware</string>
     <string name="pumperror">Pump Error</string>
@@ -37,7 +38,7 @@
     <string name="gettingtempbasalstatus">Getting temporary basal status</string>
     <string name="gettingpumpsettings">Getting pump settings</string>
     <string name="gettingpumptime">Getting pump time</string>
-    <string name="largetimedifftitle">Large Time Difference</string>
+    <string name="largetimedifftitle">Large time difference</string>
     <string name="largetimediff">Large time difference:\nTime in pump is off by more than 1.5 hours.\nPlease adjust the time manually on the pump and make sure that reading the history from the pump does not cause unexpected behaviour.\nIf possible, remove the history from the pump before changing the time or disable the closed loop for one DIA after the last wrong history entry but minimum one DIA from now.</string>
     <string name="pairfirst">Please pair your pump with your phone!</string>
     <string name="approachingdailylimit">Approaching insulin daily limit</string>

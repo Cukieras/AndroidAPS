@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -36,6 +37,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -43,7 +45,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import app.aaps.core.interfaces.plugin.PluginBase
 import app.aaps.core.interfaces.pump.actions.CustomAction
+import app.aaps.core.keys.interfaces.ElementVisibility
+import app.aaps.core.ui.compose.ExcludeFromJacocoGeneratedReport
+import app.aaps.core.ui.compose.MasterOfflineBanner
 import app.aaps.core.ui.compose.consumeOverscroll
+import app.aaps.core.ui.compose.masterEditingEnabled
 import app.aaps.core.ui.compose.icons.IcCancelExtendedBolus
 import app.aaps.core.ui.compose.icons.IcTbrCancel
 import app.aaps.core.ui.compose.navigation.ElementType
@@ -52,6 +58,7 @@ import app.aaps.core.ui.compose.navigation.color
 import app.aaps.core.ui.compose.navigation.descriptionResId
 import app.aaps.core.ui.compose.navigation.icon
 import app.aaps.core.ui.compose.navigation.labelResId
+import app.aaps.core.ui.compose.rememberBringIntoViewOnExpand
 import app.aaps.core.ui.R as CoreUiR
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,6 +74,10 @@ fun ManageBottomSheet(
     showCancelExtendedBolus: Boolean,
     showBatteryChange: Boolean,
     showFill: Boolean,
+    showAuthorizedClients: Boolean,
+    showPairWithMaster: Boolean,
+    showMutatingActions: Boolean,
+    showPump: Boolean,
     // Cancel text strings
     cancelTempBasalText: String,
     cancelExtendedBolusText: String,
@@ -96,6 +107,10 @@ fun ManageBottomSheet(
             showCancelExtendedBolus = showCancelExtendedBolus,
             showBatteryChange = showBatteryChange,
             showFill = showFill,
+            showAuthorizedClients = showAuthorizedClients,
+            showPairWithMaster = showPairWithMaster,
+            showMutatingActions = showMutatingActions,
+            showPump = showPump,
             cancelTempBasalText = cancelTempBasalText,
             cancelExtendedBolusText = cancelExtendedBolusText,
             isPatchPump = isPatchPump,
@@ -120,6 +135,10 @@ internal fun ManageBottomSheetContent(
     showCancelExtendedBolus: Boolean,
     showBatteryChange: Boolean = false,
     showFill: Boolean = false,
+    showAuthorizedClients: Boolean = false,
+    showPairWithMaster: Boolean = false,
+    showMutatingActions: Boolean = true,
+    showPump: Boolean = true,
     cancelTempBasalText: String,
     cancelExtendedBolusText: String,
     isPatchPump: Boolean = false,
@@ -131,75 +150,93 @@ internal fun ManageBottomSheetContent(
     onCancelExtendedBolusClick: () -> Unit = {},
     onCustomActionClick: (CustomAction) -> Unit = {}
 ) {
+    // True on a master / reachable client; false on a client whose master is unreachable or has control disabled.
+    // Drives the banner AND the per-button disabled state (relayed buttons grey out, only Pair-with-master stays live).
+    val editingEnabled = masterEditingEnabled()
     Column(
         modifier = Modifier
             .consumeOverscroll()
             .verticalScroll(rememberScrollState())
             .padding(bottom = 24.dp)
     ) {
+        // Explains offline vs. control-disabled; renders nothing when editing is enabled.
+        MasterOfflineBanner(editingEnabled = editingEnabled)
         // Section: Manage
         SectionHeader(stringResource(CoreUiR.string.manage))
 
         GridSection(modifier = Modifier.padding(horizontal = 16.dp)) {
-            add { modifier ->
-                ManageGridItem(
-                    elementType = ElementType.PROFILE_MANAGEMENT,
-                    onDismiss = onDismiss,
-                    onNavigate = onNavigate,
-                    modifier = modifier
-                )
-            }
-            add { modifier ->
-                ManageGridItem(
-                    elementType = ElementType.INSULIN_MANAGEMENT,
-                    onDismiss = onDismiss,
-                    onNavigate = onNavigate,
-                    modifier = modifier
-                )
-            }
-            if (showTempTarget) {
+            // Mutating editors ride the signed Client-Control channel — hidden on an unpaired client
+            // (showMutatingActions=false), always shown on a master. SITE_ROTATION now rides it too (its record +
+            // edit write path is Client-Control-migrated), so it is gated alongside the others.
+            if (showMutatingActions) {
                 add { modifier ->
                     ManageGridItem(
-                        elementType = ElementType.TEMP_TARGET_MANAGEMENT,
+                        elementType = ElementType.PROFILE_MANAGEMENT,
+                        onDismiss = onDismiss,
+                        onNavigate = onNavigate,
+                        modifier = modifier
+                    )
+                }
+                add { modifier ->
+                    ManageGridItem(
+                        elementType = ElementType.INSULIN_MANAGEMENT,
+                        onDismiss = onDismiss,
+                        onNavigate = onNavigate,
+                        modifier = modifier
+                    )
+                }
+                if (showTempTarget) {
+                    add { modifier ->
+                        ManageGridItem(
+                            elementType = ElementType.TEMP_TARGET_MANAGEMENT,
+                            onDismiss = onDismiss,
+                            onNavigate = onNavigate,
+                            modifier = modifier
+                        )
+                    }
+                }
+                add { modifier ->
+                    ManageGridItem(
+                        elementType = ElementType.QUICK_WIZARD_MANAGEMENT,
+                        onDismiss = onDismiss,
+                        onNavigate = onNavigate,
+                        modifier = modifier
+                    )
+                }
+                add { modifier ->
+                    ManageGridItem(
+                        elementType = ElementType.SCENE_MANAGEMENT,
+                        onDismiss = onDismiss,
+                        onNavigate = onNavigate,
+                        modifier = modifier
+                    )
+                }
+                add { modifier ->
+                    ManageGridItem(
+                        elementType = ElementType.AUTOMATION_MANAGEMENT,
+                        onDismiss = onDismiss,
+                        onNavigate = onNavigate,
+                        modifier = modifier
+                    )
+                }
+                add { modifier ->
+                    ManageGridItem(
+                        elementType = ElementType.FOOD_MANAGEMENT,
+                        onDismiss = onDismiss,
+                        onNavigate = onNavigate,
+                        modifier = modifier
+                    )
+                }
+                add { modifier ->
+                    ManageGridItem(
+                        elementType = ElementType.SITE_ROTATION,
                         onDismiss = onDismiss,
                         onNavigate = onNavigate,
                         modifier = modifier
                     )
                 }
             }
-            add { modifier ->
-                ManageGridItem(
-                    elementType = ElementType.QUICK_WIZARD_MANAGEMENT,
-                    onDismiss = onDismiss,
-                    onNavigate = onNavigate,
-                    modifier = modifier
-                )
-            }
-            add { modifier ->
-                ManageGridItem(
-                    elementType = ElementType.SCENE_MANAGEMENT,
-                    onDismiss = onDismiss,
-                    onNavigate = onNavigate,
-                    modifier = modifier
-                )
-            }
-            add { modifier ->
-                ManageGridItem(
-                    elementType = ElementType.FOOD_MANAGEMENT,
-                    onDismiss = onDismiss,
-                    onNavigate = onNavigate,
-                    modifier = modifier
-                )
-            }
-            add { modifier ->
-                ManageGridItem(
-                    elementType = ElementType.SITE_ROTATION,
-                    onDismiss = onDismiss,
-                    onNavigate = onNavigate,
-                    modifier = modifier
-                )
-            }
-            if (pumpPlugin != null) {
+            if (pumpPlugin != null && showPump) {
                 add { modifier ->
                     ManageGridItem(
                         text = stringResource(CoreUiR.string.pump_management),
@@ -212,10 +249,31 @@ internal fun ManageBottomSheetContent(
                     )
                 }
             }
+            if (showAuthorizedClients) {
+                add { modifier ->
+                    ManageGridItem(
+                        elementType = ElementType.AUTHORIZED_CLIENTS,
+                        onDismiss = onDismiss,
+                        onNavigate = onNavigate,
+                        modifier = modifier
+                    )
+                }
+            }
+            if (showPairWithMaster) {
+                add { modifier ->
+                    ManageGridItem(
+                        elementType = ElementType.PAIR_WITH_MASTER,
+                        onDismiss = onDismiss,
+                        onNavigate = onNavigate,
+                        modifier = modifier
+                    )
+                }
+            }
         }
 
-        // Section: Device maintenance & basal
-        if (showTempBasal || showCancelTempBasal || showExtendedBolus || showCancelExtendedBolus) {
+        // Section: Device maintenance & basal — every item (sensor insert, fill, battery change, TBR/EB) now rides
+        // Client-Control, so the whole section is gated MASTER_OR_PAIRED_CLIENT (hidden on an unpaired client).
+        if (showMutatingActions && (showTempBasal || showCancelTempBasal || showExtendedBolus || showCancelExtendedBolus)) {
             HorizontalDivider(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp))
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -228,7 +286,7 @@ internal fun ManageBottomSheetContent(
                         modifier = modifier
                     )
                 }
-                if (showFill) {
+                if (showFill) { // section already gated by showMutatingActions
                     add { modifier ->
                         ManageGridItem(
                             elementType = ElementType.FILL,
@@ -248,7 +306,7 @@ internal fun ManageBottomSheetContent(
                         )
                     }
                 }
-                if (!isSimpleMode) {
+                if (!isSimpleMode) { // section already gated by showMutatingActions
                     if (showCancelTempBasal) {
                         add { modifier ->
                             ManageGridItem(
@@ -257,6 +315,7 @@ internal fun ManageBottomSheetContent(
                                 color = ElementType.TEMP_BASAL.color(),
                                 onDismiss = onDismiss,
                                 onClick = onCancelTempBasalClick,
+                                enabled = editingEnabled,
                                 modifier = modifier
                             )
                         }
@@ -279,6 +338,7 @@ internal fun ManageBottomSheetContent(
                                 color = ElementType.EXTENDED_BOLUS.color(),
                                 onDismiss = onDismiss,
                                 onClick = onCancelExtendedBolusClick,
+                                enabled = editingEnabled,
                                 modifier = modifier
                             )
                         }
@@ -297,9 +357,11 @@ internal fun ManageBottomSheetContent(
             }
         }
 
-        // Section: Careportal (hidden in simple mode, collapsed by default)
-        if (!isSimpleMode) {
+        // Section: Careportal (hidden in simple mode, collapsed by default). Its events now ride Client-Control
+        // (Track B), so the section is also gated MASTER_OR_PAIRED_CLIENT — hidden on an unpaired client.
+        if (!isSimpleMode && showMutatingActions) {
             var careportalExpanded by remember { mutableStateOf(false) }
+            val careportalExpandRequester = rememberBringIntoViewOnExpand(careportalExpanded)
             HorizontalDivider(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp))
             CollapsibleSectionHeader(
                 text = stringResource(CoreUiR.string.careportal),
@@ -307,7 +369,10 @@ internal fun ManageBottomSheetContent(
                 onToggle = { careportalExpanded = !careportalExpanded }
             )
 
-            AnimatedVisibility(visible = careportalExpanded) {
+            AnimatedVisibility(
+                visible = careportalExpanded,
+                modifier = Modifier.bringIntoViewRequester(careportalExpandRequester)
+            ) {
                 GridSection(modifier = Modifier.padding(horizontal = 16.dp)) {
                     add { modifier ->
                         ManageGridItem(
@@ -403,9 +468,11 @@ private fun GridSection(
                     .height(IntrinsicSize.Max)
             ) {
                 rowItems.forEach { item ->
-                    item(Modifier
-                             .weight(1f)
-                             .fillMaxHeight())
+                    item(
+                        Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                    )
                 }
                 if (rowItems.size == 1) {
                     Spacer(modifier = Modifier.weight(1f))
@@ -467,12 +534,18 @@ private fun ManageGridItem(
     onNavigate: (NavigationRequest) -> Unit,
     modifier: Modifier = Modifier,
     text: String? = null,
-    coloredText: Boolean = true
+    coloredText: Boolean = true,
+    enabled: Boolean = true
 ) {
     val color = elementType.color()
     val label = text ?: stringResource(elementType.labelResId())
     val descResId = elementType.descriptionResId()
     val description = if (descResId != 0) stringResource(descResId) else null
+    // A relayed action (visible only to master/paired-client) is also DISABLED when the master is unreachable or
+    // has remote control turned off — not just hidden when unpaired. Non-relayed entries (Pump, Pair-with-master)
+    // use their own visibility lambda, so they stay enabled (the only thing you can still do is re-pair).
+    val effectiveEnabled = enabled &&
+        (masterEditingEnabled() || elementType.visibility != ElementVisibility.MASTER_OR_PAIRED_CLIENT)
     ManageGridItem(
         text = label,
         icon = elementType.icon(),
@@ -481,6 +554,7 @@ private fun ManageGridItem(
         onClick = { onNavigate(NavigationRequest.Element(elementType)) },
         description = description,
         coloredText = coloredText,
+        enabled = effectiveEnabled,
         modifier = modifier
     )
 }
@@ -494,16 +568,18 @@ private fun ManageGridItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     description: String? = null,
-    coloredText: Boolean = true
+    coloredText: Boolean = true,
+    enabled: Boolean = true
 ) {
     ElevatedCard(
         onClick = {
             onDismiss()
             onClick()
         },
+        enabled = enabled,
         modifier = modifier
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(modifier = Modifier.alpha(if (enabled) 1f else 0.38f).padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 SmallTonalIcon(icon = icon, color = color)
                 Spacer(modifier = Modifier.width(8.dp))
@@ -542,6 +618,7 @@ private fun SmallTonalIcon(icon: ImageVector, color: Color) {
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview(showBackground = true)
 @Composable
 private fun ManageBottomSheetContentPreview() {

@@ -13,11 +13,14 @@ import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.receivers.Intents
 import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
+import app.aaps.core.utils.extensions.copyBoolean
 import app.aaps.core.utils.extensions.copyDouble
 import app.aaps.core.utils.extensions.copyLong
 import app.aaps.core.utils.extensions.copyString
 import app.aaps.core.utils.receivers.BundleLogger
 import app.aaps.core.utils.receivers.DataInbox
+import app.aaps.implementation.receivers.KeepAliveWorker
+import app.aaps.plugins.source.AidexPlugin
 import app.aaps.plugins.source.DexcomInbox
 import app.aaps.plugins.source.GlimpPlugin
 import app.aaps.plugins.source.MM640gPlugin
@@ -37,6 +40,7 @@ open class DataReceiver : DaggerBroadcastReceiver() {
     @Inject lateinit var aapsLogger: AAPSLogger
     @Inject lateinit var dataInbox: DataInbox
     @Inject lateinit var fabricPrivacy: FabricPrivacy
+    @Inject lateinit var workManager: WorkManager
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
@@ -53,7 +57,7 @@ open class DataReceiver : DaggerBroadcastReceiver() {
 
             Intents.POCTECH_BG                        ->
                 enqueueInline(
-                    context, PoctechPlugin.PoctechWorker::class.java,
+                    PoctechPlugin.PoctechWorker::class.java,
                     Data.Builder().also {
                         it.copyString("data", bundle)
                     }.build()
@@ -61,7 +65,7 @@ open class DataReceiver : DaggerBroadcastReceiver() {
 
             Intents.GLIMP_BG                          ->
                 enqueueInline(
-                    context, GlimpPlugin.GlimpWorker::class.java,
+                    GlimpPlugin.GlimpWorker::class.java,
                     Data.Builder().also {
                         it.copyDouble("mySGV", bundle)
                         it.copyString("myTrend", bundle)
@@ -71,7 +75,7 @@ open class DataReceiver : DaggerBroadcastReceiver() {
 
             Intents.TOMATO_BG                         ->
                 enqueueInline(
-                    context, TomatoPlugin.TomatoWorker::class.java,
+                    TomatoPlugin.TomatoWorker::class.java,
                     Data.Builder().also {
                         it.copyDouble("com.fanqies.tomatofn.Extras.BgEstimate", bundle)
                         it.copyLong("com.fanqies.tomatofn.Extras.Time", bundle)
@@ -80,7 +84,7 @@ open class DataReceiver : DaggerBroadcastReceiver() {
 
             Intents.NS_EMULATOR                       ->
                 enqueueInline(
-                    context, MM640gPlugin.MM640gWorker::class.java,
+                    MM640gPlugin.MM640gWorker::class.java,
                     Data.Builder().also {
                         it.copyString("collection", bundle)
                         it.copyString("data", bundle)
@@ -90,7 +94,7 @@ open class DataReceiver : DaggerBroadcastReceiver() {
             Intents.OTTAI_APP, Intents.OTTAI_APP_CN,
             Intents.SYAI_APP                          ->
                 enqueueInline(
-                    context, SyaiPlugin.SyaiWorker::class.java,
+                    SyaiPlugin.SyaiWorker::class.java,
                     Data.Builder().also {
                         it.copyString("collection", bundle)
                         it.copyString("data", bundle)
@@ -99,7 +103,7 @@ open class DataReceiver : DaggerBroadcastReceiver() {
 
             Intents.SI_APP                            ->
                 enqueueInline(
-                    context, PatchedSiAppPlugin.PatchedSiAppWorker::class.java,
+                    PatchedSiAppPlugin.PatchedSiAppWorker::class.java,
                     Data.Builder().also {
                         it.copyString("collection", bundle)
                         it.copyString("data", bundle)
@@ -108,7 +112,7 @@ open class DataReceiver : DaggerBroadcastReceiver() {
 
             Intents.SINO_APP                          ->
                 enqueueInline(
-                    context, PatchedSinoAppPlugin.PatchedSinoAppWorker::class.java,
+                    PatchedSinoAppPlugin.PatchedSinoAppWorker::class.java,
                     Data.Builder().also {
                         it.copyString("collection", bundle)
                         it.copyString("data", bundle)
@@ -117,7 +121,7 @@ open class DataReceiver : DaggerBroadcastReceiver() {
 
             Intents.INSTARA_APP                       ->
                 enqueueInline(
-                    context, InstaraPlugin.InstaraWorker::class.java,
+                    InstaraPlugin.InstaraWorker::class.java,
                     Data.Builder().also {
                         it.copyString("collection", bundle)
                         it.copyString("data", bundle)
@@ -129,6 +133,25 @@ open class DataReceiver : DaggerBroadcastReceiver() {
 
             Intents.DEXCOM_BG, Intents.DEXCOM_G7_BG   ->
                 dataInbox.putAndEnqueue(DexcomInbox, bundle)
+
+            Intents.AIDEX_NEW_BG_ESTIMATE             ->
+                enqueueInline(
+                    AidexPlugin.AidexWorker::class.java,
+                    Data.Builder().also {
+                        it.copyLong(Intents.AIDEX_TIMESTAMP, bundle)
+                        it.copyString(Intents.AIDEX_BG_TYPE, bundle)
+                        it.copyDouble(Intents.AIDEX_BG_VALUE, bundle)
+                        it.copyString(Intents.AIDEX_BG_SLOPE_NAME, bundle)
+                        it.copyString(Intents.AIDEX_TRANSMITTER_SN, bundle)
+                        it.copyString(Intents.AIDEX_SENSOR_ID, bundle)
+                        it.copyBoolean(Intents.AIDEX_SENSOR_EXPIRED, bundle)
+                        it.copyBoolean(Intents.EXTRA_SENSOR_ERROR, bundle)
+                        it.copyBoolean(Intents.EXTRA_SENSOR_STABILIZING, bundle)
+                        it.copyBoolean(Intents.EXTRA_REPLACE_SENSOR, bundle)
+                        it.copyBoolean(Intents.EXTRA_SIGNAL_LOST, bundle)
+                    }.build()
+                )
+
         }
 
         // Verify KeepAlive is running
@@ -136,8 +159,8 @@ open class DataReceiver : DaggerBroadcastReceiver() {
         KeepAliveWorker.scheduleIfNotRunning(context, aapsLogger, fabricPrivacy)
     }
 
-    private fun enqueueInline(context: Context, worker: Class<out ListenableWorker>, data: Data) {
-        WorkManager.getInstance(context).enqueueUniqueWork(
+    private fun enqueueInline(worker: Class<out ListenableWorker>, data: Data) {
+        workManager.enqueueUniqueWork(
             INLINE_WORK_NAME,
             ExistingWorkPolicy.APPEND_OR_REPLACE,
             OneTimeWorkRequest.Builder(worker).setInputData(data).build()

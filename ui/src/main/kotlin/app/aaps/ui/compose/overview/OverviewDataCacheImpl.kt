@@ -82,6 +82,7 @@ import app.aaps.core.keys.IntKey
 import app.aaps.core.keys.StringKey
 import app.aaps.core.keys.UnitDoubleKey
 import app.aaps.core.keys.interfaces.Preferences
+import app.aaps.core.objects.extensions.apsAdjustedTargetMgdl
 import app.aaps.core.objects.extensions.fromGv
 import app.aaps.core.objects.extensions.target
 import app.aaps.core.objects.profile.ProfileSealed
@@ -285,10 +286,12 @@ class OverviewDataCacheImpl @AssistedInject constructor(
 
             // Observe GlucoseValue changes
             scope.launch {
-                persistenceLayer.observeChanges(GV::class.java).collect { glucoseValues ->
-                    aapsLogger.debug(LTag.UI, "GV change detected, updating BgInfo (${glucoseValues.size} values)")
-                    updateBgInfoFromDatabase()
-                }
+                persistenceLayer.observeChanges(GV::class.java)
+                    .compensateForClockSkew(config, dateUtil)
+                    .collect { glucoseValues ->
+                        aapsLogger.debug(LTag.UI, "GV change detected, updating BgInfo (${glucoseValues.size} values)")
+                        updateBgInfoFromDatabase()
+                    }
             }
 
             // TT and EPS chip observers are handled below in Category B reactive graph observers
@@ -335,6 +338,7 @@ class OverviewDataCacheImpl @AssistedInject constructor(
             )) {
                 scope.launch {
                     persistenceLayer.observeChanges(type)
+                        .compensateForClockSkew(config, dateUtil)
                         .debounce(300)
                         .collect { rebuildTreatmentGraph() }
                 }
@@ -342,6 +346,7 @@ class OverviewDataCacheImpl @AssistedInject constructor(
             // Observe HR changes for treatment graph + heart rate graph
             scope.launch {
                 persistenceLayer.observeChanges(HR::class.java)
+                    .compensateForClockSkew(config, dateUtil)
                     .debounce(300)
                     .collect {
                         rebuildTreatmentGraph()
@@ -351,6 +356,7 @@ class OverviewDataCacheImpl @AssistedInject constructor(
             // Observe SC changes for treatment graph + steps graph
             scope.launch {
                 persistenceLayer.observeChanges(SC::class.java)
+                    .compensateForClockSkew(config, dateUtil)
                     .debounce(300)
                     .collect {
                         rebuildTreatmentGraph()
@@ -402,6 +408,7 @@ class OverviewDataCacheImpl @AssistedInject constructor(
             // EPS changes affect EPS graph, profile chip, TT chip, target line, and basal
             scope.launch {
                 persistenceLayer.observeChanges(EPS::class.java)
+                    .compensateForClockSkew(config, dateUtil)
                     .debounce(300)
                     .collect {
                         rebuildEpsGraph()
@@ -416,6 +423,7 @@ class OverviewDataCacheImpl @AssistedInject constructor(
             // Observe basal-related DB changes
             scope.launch {
                 persistenceLayer.observeChanges(TB::class.java)
+                    .compensateForClockSkew(config, dateUtil)
                     .debounce(300)
                     .collect {
                         rebuildBasalGraph()
@@ -424,6 +432,7 @@ class OverviewDataCacheImpl @AssistedInject constructor(
             }
             scope.launch {
                 persistenceLayer.observeChanges(EB::class.java)
+                    .compensateForClockSkew(config, dateUtil)
                     .debounce(300)
                     .collect { rebuildBasalGraph() }
             }
@@ -560,15 +569,10 @@ class OverviewDataCacheImpl @AssistedInject constructor(
             val profile = profileFunction.getProfile()
             if (profile != null) {
                 // Check if APS/AAPSCLIENT has adjusted target
-                val targetUsed = when {
-                    config.APS        -> loop.lastRun?.constraintsProcessed?.targetBG ?: 0.0
-                    config.AAPSCLIENT -> processedDeviceStatusData.getAPSResult()?.targetBG ?: 0.0
-                    else              -> 0.0
-                }
-
-                if (targetUsed != 0.0 && abs(profile.getTargetMgdl() - targetUsed) > 0.01) {
+                val adjustedTarget = profile.apsAdjustedTargetMgdl(loop, config, processedDeviceStatusData)
+                if (adjustedTarget != null) {
                     // APS adjusted target
-                    val apsTarget = profileUtil.toTargetRangeString(targetUsed, targetUsed, GlucoseUnit.MGDL, units)
+                    val apsTarget = profileUtil.toTargetRangeString(adjustedTarget, adjustedTarget, GlucoseUnit.MGDL, units)
                     TempTargetDisplayData(apsTarget, TempTargetState.ADJUSTED, 0L, 0L)
                 } else {
                     // Default profile target
@@ -738,8 +742,11 @@ class OverviewDataCacheImpl @AssistedInject constructor(
     /** Compute graph time range from current timeRangeFlow */
     private fun graphTimeRange(): Pair<Long, Long>? {
         val range = timeRangeFlow.value ?: return null
-        val toTime = range.endTime
-        val fromTime = toTime - T.hours(Constants.GRAPH_TIME_RANGE_HOURS.toLong()).msecs()
+        val toTime = range.endTime // upper bound may include prediction horizon
+        // History width is always anchored on toTime so secondary graphs (basal, HR, steps)
+        // cover the same 24h of history as the BG graph, not endTime - 24h (which would shift
+        // the start forward by the prediction horizon).
+        val fromTime = range.toTime - T.hours(Constants.GRAPH_TIME_RANGE_HOURS.toLong()).msecs()
         return fromTime to toTime
     }
 

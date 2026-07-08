@@ -2,6 +2,10 @@
 <resources>
     <string name="error_field_must_not_be_empty">Feltet må ikke være tomt</string>
     <string name="error_mustbe4hexadidits">Må være 4 tegn fra ABCDEF0123456789</string>
+    <string name="authorized_clients_manage_label">Autoriserte klienter</string>
+    <string name="authorized_clients_manage_desc">Administrer tilkoblede klientenheter som styrer denne hovedenheten.</string>
+    <string name="pair_with_master_manage_label">Koble til hovedenhet</string>
+    <string name="pair_with_master_manage_desc">Skriv inn hovedenhetens sammenkoblings-PIN for å la denne klienten sende signerte kommandoer.</string>
     <!--    General-->
     <string name="treatments">Behandlinger</string>
     <string name="treatments_history">Behandlingshistorikk</string>
@@ -16,6 +20,7 @@
     <string name="refresh">Oppdater</string>
     <string name="no_history_records">Ingen poster funnet</string>
     <string name="error">Feil</string>
+    <string name="navigation_error_screen_not_found">Skjermbildet kunne ikke åpnes (ikke tilgjengelig i denne konfigurasjonen)</string>
     <string name="profile_set_ok">Basalprofil i pumpen er oppdatert</string>
     <string name="invalid_input">Ugyldige verdier</string>
     <string name="invalid_number">Ugyldig nummer</string>
@@ -29,11 +34,14 @@
     <string name="failed_update_basal_profile">Klarte ikke å oppdatere basalprofil</string>
     <string name="no_valid_basal_rate">Ingen gyldige basaldoser ble lest fra pumpen</string>
     <string name="limiting_iob">Begrenser IOB til %1$.1f E på grunn av %2$s</string>
-    <string name="loop_disabled">LOOP DEAKTIVERT PGA BEGRENSNINGER</string>
     <string name="loop_disabled_by_user">Loop deaktivert av bruker</string>
     <string name="event_type">Hendelsestype</string>
-    <string name="mgdl">mg/dl</string>
-    <string name="mmol">mmol/l</string>
+    <string name="mgdl">mg/dL</string>
+    <string name="mmol">mmol/L</string>
+    <string name="profile_isf_units_mgdl">mg/dL/E</string>
+    <string name="profile_isf_units_mmol">mmol/L/E</string>
+    <string name="bg_mgdl">%1$d mg/dL</string>
+    <string name="bg_mmol">%1$.1f mmol/L</string>
     <string name="save">Lagre</string>
     <string name="skip">Hopp over</string>
     <string name="switch_to_edit">Rediger</string>
@@ -49,11 +57,13 @@
     <string name="patient_name_default" comment="This is default patient display name, when user does not provide real one">Bruker</string>
     <string name="result">Resultat</string>
     <string name="settings">Innstillinger</string>
-    <string name="simple_mode">Enkelmodus</string>
+    <string name="open_plugin">Åpne plugin</string>
+    <string name="configbuilder_pick_one_hint">Velg én. Bare én kan være aktiv om gangen.</string>
+    <string name="configbuilder_pick_many_hint">Velg de som gjelder.</string>
+    <string name="configbuilder_no_selection_warning">Ingen plugin er valgt i denne kategorien.</string>
     <string name="expand">Utvid</string>
     <string name="collapse">Kollaps</string>
     <string name="no_compose_preferences">Ingen innstillinger tilgjengelig for denne plugin</string>
-    <string name="plugin_no_preferences">Plugin støtter ikke innstillinger</string>
     <string name="confirm_password_hint">Bekreft passord</string>
     <string name="confirm_pin_hint">Bekreft PIN</string>
     <string name="preference_range_summary" comment="%1$s=current value, %2$s=unit label, %3$s=minimum, %4$s=maximum. Example: 5.0 U (0.0 – 10.0)">%1$s%2$s (%3$s – %4$s)</string>
@@ -62,6 +72,7 @@
     <string name="configbuilder_insulin">Insulin</string>
     <string name="configbuilder_bgsource">BS-kilde</string>
     <string name="configbuilder_smoothing">Utjevning</string>
+    <string name="configbuilder_calibration">Kalibrering</string>
     <string name="configbuilder_pump">Pumpe</string>
     <string name="configbuilder_sensitivity">Sensitivitetsdeteksjon</string>
     <string name="configbuilder_aps">APS</string>
@@ -85,7 +96,6 @@
     <string name="mute">Lyd av</string>
     <string name="success">Suksess</string>
     <string name="advanced_settings_title">Avanserte innstillinger</string>
-    <string name="extendedbolusdeliveryerror">Forlenget bolus leveringsfeil</string>
     <string name="extended_bolus">Forlenget bolus</string>
     <string name="paused">Pauset</string>
     <string name="running">Kjører</string>
@@ -95,8 +105,11 @@
     <string name="androidaps_start">AAPS startet</string>
     <string name="formatsignedinsulinunits">%1$+.2f E</string>
     <string name="format_carbs">%1$d g</string>
+    <string name="format_carbs_split" comment="Compact carbs summary when a food type splits the entry into immediate + extended carbs. %1$d=immediate carbs (g), %2$d=extended (eCarbs) carbs (g). Example: 9+2 g">%1$d+%2$d g</string>
     <string name="format_hours">%1$.2f t</string>
     <string name="format_mins">%1$d min</string>
+    <string name="confirmation_line" comment="Confirmation-summary line, joins a label and an already-formatted value. %1$s = label, %2$s = value with its unit. Example: Bolus: 1.50 U">%1$s: %2$s</string>
+    <string name="value_with_unit" comment="A numeric value followed by its unit, when no dedicated value template exists. %1$s = value, %2$s = unit. Example: 120 mg/dl">%1$s %2$s</string>
     <string name="objectives">Opplæringsmål</string>
     <string name="please_wait">Vennligst vent…</string>
     <string name="stop">Stopp</string>
@@ -183,6 +196,8 @@
     <string name="reset">Tilbakestill</string>
     <string name="profileswitch_ismissing">Profilbytte mangler. Utfør et profilbytte og trykk på \"Aktiver profil\" i din lokale profil.</string>
     <string name="profile">Profil</string>
+    <string name="percentage_label">Percentage</string>
+    <string name="timeshift_label">Tidsforskyving</string>
     <string name="confirm_remove_multiple_items">Er du sikker på at du vil fjerne %1$d elementer</string>
     <string name="overview_treatment_label">Behandling</string>
     <string name="copytolocalprofile">Opprett ny profil fra denne profilen?</string>
@@ -233,8 +248,9 @@
     <string name="configbuilder_nightscoutversion_label">Nightscout-versjon:</string>
     <string name="not_available_full">Ikke tilgjengelig</string>
     <string name="engineering_mode_enabled">Engineering mode aktivert</string>
-    <string name="back">Bakside</string>
+    <string name="back">Tilbake</string>
     <string name="next">Neste</string>
+    <string name="pref_syncs_with_main_phone">Synkroniseres med hovedtelefonen</string>
     <string name="show_hide_records">Skjul loop-poster</string>
     <!--    Protection-->
     <string name="wrongpassword">Feil passord</string>
@@ -245,7 +261,6 @@
     <string name="basalprofilenotaligned">Basalverdier er ikke angitt på hele timer: %1$s</string>
     <string name="minimalbasalvaluereplaced">Basalverdi erstattet med minste tillate verdi: %1$s</string>
     <string name="maximumbasalvaluereplaced">Basalverdi erstattet med høyeste tillate verdi: %1$s</string>
-    <string name="profile_per_unit">/E</string>
     <string name="profile_ins_units_per_hour">E/t</string>
     <string name="profile_carbs_per_unit">g/E</string>
     <!--    ProfileFunction-->
@@ -321,6 +336,8 @@
     <string name="temporary_target">Midlertidig mål</string>
     <string name="temporary_targets">Midlertidige mål</string>
     <string name="running_mode">Kjøremodus</string>
+    <string name="running_mode_change_not_allowed">Endring av kjøremodus er ikke tilgjengelig</string>
+    <string name="pump_reconnect">Koble til pumpen på nytt</string>
     <string name="scene">Scene</string>
     <string name="scenes">Scener</string>
     <string name="scene_desc">Forhåndsinnstillinger for situasjoner - aktivere flere hendelser på en gang</string>
@@ -328,6 +345,7 @@
     <string name="scene_deactivate">Avslutt scene</string>
     <string name="scene_active">Aktiv</string>
     <string name="scene_ended">Scene avsluttet</string>
+    <string name="scene_end_active">Avslutt aktiv scene</string>
     <string name="scene_confirm_activate">Aktivere scene \"%1$s\"?</string>
     <string name="scene_confirm_deactivate">Avslutte scene \"%1$s\" og tilbakestille endringer?</string>
     <string name="scene_conflict_active_tt">Dette vil erstatte et aktivt midlertidig mål</string>
@@ -335,7 +353,8 @@
     <string name="scene_conflict_active_running_mode">Aktiv kjøremodus vil bli erstattet</string>
     <string name="scene_conflict_active_scene">Aktiv scene \"%1$s\" vil bli avsluttet først</string>
     <string name="scene_action_tt">Midlertidig mål: %1$s</string>
-    <string name="scene_action_profile">Profil: %1$s %2$d%%</string>
+    <string name="scene_action_profile" comment="%1$s=profile name, %2$d=percentage. Example: Profile: Default 150%">Profil: %1$s %2$d%%</string>
+    <string name="scene_action_profile_pct_only" comment="%1$d=percentage, used when no specific named profile. Example: Profile: 150%">Profil: %1$d%%</string>
     <string name="scene_action_smb_on">Aktiver SMB</string>
     <string name="scene_action_smb_off">Deaktiver SMB</string>
     <string name="scene_action_running_mode">Kjøremodus: %1$s</string>
@@ -344,7 +363,6 @@
     <string name="scene_management_desc">Lage, endre og håndtere scener</string>
     <string name="scene_action_count">%1$d handlinger</string>
     <string name="scene_start_from_template">Start fra mal</string>
-    <string name="scene_editor_reason">Årsak</string>
     <string name="scene_editor_target">Mål</string>
     <string name="scene_editor_tt_preset">Forhåndsinnstilt mål</string>
     <string name="scene_editor_no_tt_presets">Finner ingen forhåndsinnstilte mål</string>
@@ -366,6 +384,42 @@
     <string name="scene_no_profile_store">Finner ingen profiler</string>
     <string name="scene_no_actions">Scenen har ingen handlinger</string>
     <string name="scene_profile_not_found">Profil \"%1$s\" finnes ikke</string>
+    <string name="scene_lock_banner_master_offline">Hovedenheten kan ikke nås. Scenekontroller blir tilgjengelige igjen når forbindelsen er gjenopprettet.</string>
+    <string name="scene_lock_banner_control_disabled">Hovedenheten har deaktivert fjernstyring. Scenekontrollene blir tilgjengelige igjen når fjernstyring aktiveres på hovedenheten.</string>
+    <string name="master_offline_banner">Hovedenheten kan ikke nås. Redigering er deaktivert til forbindelsen er gjenopprettet.</string>
+    <string name="master_control_disabled_banner">Hovedenheten har deaktivert fjernstyring. Redigering er deaktivert til den aktiveres igjen på hovedenheten.</string>
+    <string name="scene_lock_reason_master_offline">Hovedenheten er frakoblet</string>
+    <string name="scene_lock_reason_control_disabled">Fjernstyring deaktivert</string>
+    <string name="scene_lock_reason_scene_active">Avslutt den aktive scenen først</string>
+    <!-- Client-control action labels (shown in the pending/failure modal as "Couldn't {label}") -->
+    <string name="clientcontrol_action_set_temp_target">Sett midlertidig mål</string>
+    <string name="clientcontrol_action_cancel_temp_target">Avbryt midlertidig mål</string>
+    <string name="clientcontrol_action_activate_scene">Aktiver scene %1$s</string>
+    <string name="clientcontrol_action_deactivate_scene">Avslutt scene</string>
+    <string name="clientcontrol_action_update_settings">Oppdater innstillinger</string>
+    <string name="clientcontrol_action_deliver_bolus">Lever bolus</string>
+    <!-- Client-control failure reasons (mapped from a FailureReason code on the showing device) -->
+    <string name="clientcontrol_fail_not_paired">Denne enheten er ikke koblet til en hovedenhet.</string>
+    <string name="clientcontrol_fail_not_reachable">Hovedenheten er frakoblet.</string>
+    <string name="clientcontrol_pump_out_of_sync" comment="Shown when a follower relays a temp basal / extended bolus but its cached pump type no longer matches the master\'s pump">Pumpekonfigurasjonen er ikke synkronisert med hovedenheten. Prøv igjen.</string>
+    <string name="clientcontrol_fail_no_reply">Ingen svar fra hovedenheten innen tidsfristen.</string>
+    <string name="clientcontrol_fail_expired">Kommandoen utløp før hovedenheten utførte den.</string>
+    <string name="clientcontrol_fail_busy">En annen handling pågår allerede.</string>
+    <string name="clientcontrol_fail_send_failed">Kunne ikke koble til Nightscout.</string>
+    <string name="clientcontrol_fail_no_active_profile">Hovedenheten har ingen aktiv profil å bruke dette på.</string>
+    <string name="clientcontrol_fail_scene_not_found">Scenen finnes ikke lenger.</string>
+    <string name="clientcontrol_fail_site_entry_not_found">Infusjonsstedet finnes ikke lenger.</string>
+    <string name="clientcontrol_fail_scene_disabled">Scenen er deaktivert.</string>
+    <string name="clientcontrol_fail_partial">Noen handlinger kunne ikke utføres.</string>
+    <string name="clientcontrol_fail_execution">Hovedenheten kunne ikke utføre handlingen.</string>
+    <string name="clientcontrol_fail_control_disabled">Fjernstyring er slått av på hovedenheten.</string>
+    <string name="clientcontrol_fail_no_pending_bolus">Den forberedte bolusen utløp eller ble erstattet. Trykk på knappen igjen.</string>
+    <string name="clientcontrol_fail_bolus_compute">Hovedenheten kunne ikke beregne bolusen (mangler glukoseverdi/profil, eller pumpen er ikke klar).</string>
+    <string name="clientcontrol_fail_internal">Noe gikk galt.</string>
+    <string name="clientcontrol_fail_unknown">Kommandoen mislyktes.</string>
+    <string name="clientcontrol_unconfirmed_wear">Status ukjent — kontroller telefonen/Nightscout før du gir ny bolus.</string>
+    <string name="clientcontrol_bolus_progress_stalled_title">Forbindelsen brutt — leveringsstatus ukjent</string>
+    <string name="clientcontrol_bolus_progress_stalled_body">Denne telefonen mottar ikke lenger oppdateringer fra hovedenheten. Bolusen kan fortsatt være under levering eller være ferdig levert. Hvis du lukker dette vinduet, skjules det bare her — det stopper ikke pumpen. Kontroller hovedtelefonen for faktisk levert mengde.</string>
     <string name="scene_revert_tt">Avbryt midlertidig mål</string>
     <string name="scene_revert_profile">Omgjør profilbytte</string>
     <string name="scene_revert_smb_on">Reaktiver SMB</string>
@@ -421,13 +475,13 @@
     <string name="activity">Aktivitet</string>
     <string name="wear">Klokke</string>
     <string name="automation">Automasjon</string>
+    <string name="automation_management_desc">Opprett regler som automatisk utfører handlinger basert på utløsere</string>
     <string name="settingsexport">Eksporter innstillinger</string>
     <string name="custom">Egendefinert</string>
     <string name="preset_settings">Forhåndsinnstilte innstillinger</string>
     <string name="activation">Aktivering</string>
     <string name="temp_target_management">Midlertidig mål</string>
     <string name="revert_to_defaults">Tilbakestill til standardinnstillinger</string>
-    <string name="confirm_cancel_temp_target">Avbryt aktivt midlertidig mål?</string>
     <string name="loop">Loop</string>
     <string name="ns">NS</string>
     <string name="record">Registrer</string>
@@ -447,6 +501,8 @@
     <string name="location_front_left_lower_abdomen">Nedre venstre framside av magen</string>
     <string name="location_back_right_buttock">Høyre rumpe</string>
     <string name="location_back_left_buttock">Venstre rumpe</string>
+    <string name="location_back_right_lower_back">Nedre høyre rygg</string>
+    <string name="location_back_left_lower_back">Nedre venstre rygg</string>
     <string name="location_side_right_upper_thigh">Øvre høyre ytterside av låret</string>
     <string name="location_side_left_upper_thigh">Øvre venstre ytterside av låret</string>
     <string name="location_side_right_lower_thigh">Nedre høyre ytterside av låret</string>
@@ -466,6 +522,7 @@
     <string name="arrow_center">Midten</string>
     <!--    Command-->
     <string name="connectiontimedout">Tilkoblingen ble tidsavbrutt</string>
+    <string name="command_replaced">Erstattet av en nyere kommando</string>
     <string name="pump_not_configured">Pumpe ikke konfigurert</string>
     <!--    PumpEnactResult-->
     <string name="enacted">Utført</string>
@@ -528,6 +585,7 @@
     <string name="uel_tt_ns_refresh">OPPDATER MIDLERTIDIG MÅL NS</string>
     <string name="uel_automation_removed">AUTOMASJON FJERNET</string>
     <string name="uel_bg_removed">BS FJERNET</string>
+    <string name="uel_calibration_removed">KALIBRERING FJERNET</string>
     <string name="uel_careportal_removed">HELSEPORTAL FJERNET</string>
     <string name="uel_bolus_removed">BOLUS FJERNET</string>
     <string name="uel_carbs_removed">KARBO FJERNET</string>
@@ -587,6 +645,7 @@
     <string name="uel_running_mode_updarted">KJØREMODUS OPPDATERT</string>
     <string name="uel_scene_activated">SCENE AKTIVERT</string>
     <string name="uel_scene_deactivated">SCENE DEAKTIVERT</string>
+    <string name="uel_remote_config_changed">FJERNKONFIGURASJON ENDRET</string>
     <!-- HardLimits -->
     <string name="profile_low_target">Profil lavt mål</string>
     <string name="profile_high_target">Profil høyt mål</string>
@@ -607,6 +666,9 @@
     <!-- Profile validation -->
     <string name="no_profile_selected">Ingen profil valgt</string>
     <string name="missing_profile_name">Mangler profilnavn</string>
+    <string name="profile_not_saved_activate">Profilen er ikke lagret. Vennligst lagre profilen før aktivering.</string>
+    <string name="profile_basal_not_compatible_with_pump">Basaldosen er ikke kompatibel med den aktuelle pumpen og kan ikke aktiveres. Reduser prosenten eller juster basaldosen.</string>
+    <string name="profile_pump_incompatible_label">Pumpegrense</string>
     <string name="error_in_ic_values">Feil i IK-forholdstallet</string>
     <string name="error_in_isf_values">Feil i ISF-verdien</string>
     <string name="error_in_basal_values">Feil i basalverdiene</string>
@@ -640,7 +702,10 @@
     <string name="basal">Basal</string>
     <string name="basalpct">Basal %</string>
     <string name="sensitivity">Sensitivitet</string>
-    <string name="isf_for_carbs">ISF for kalkulator og karboabsorpsjon: %1$.1f</string>
+    <string name="isf_for_carbs">Gjennomsnittlig ISF for kalkulator og karboabsorpsjon: %1$.1f</string>
+    <string name="isf_profile">Profil ISF: %1$.1f</string>
+    <string name="isf_variable">Dynamisk ISF: %1$.1f</string>
+    <string name="isf_effective">Effektiv ISF: %1$.1f</string>
     <string name="autosens_long">Autosens-verdi: %.0f%%</string>
     <string name="autosens_short">%.0f%%</string>
     <string name="algorithm_long">Algoritmens sensitivitet: %.0f%%</string>
@@ -681,26 +746,15 @@
     <string name="wizard_include_cob">Inkluder COB</string>
     <string name="wizard_calculation">Beregning</string>
     <string name="no_action_selected">Ingen handling valgt. Ingenting endres</string>
-    <string name="carb_equal_zero_no_action">Karbo = 0. Ingen handling utført!</string>
-    <string name="bolus_equal_zero_no_action">Bolus = 0. Ingen handling utført!</string>
+    <string name="carbs_removal_cob_limit" comment="Shown under the carbs field when removing carbs (a negative value). %1$d = grams of carbs currently on board, the maximum removable. Example: Max removal: 30 g (carbs on board)">Maks fjerning: %1$d g (karbo ombord)</string>
     <string name="wizard_no_insulin_required">Insulin er ikke nødvendig</string>
     <string name="wizard_no_actual_bg">Mangler nylige BS-verdier til å gjøre beregninger!</string>
     <string name="wizard_no_active_profile">Det er ikke angitt noen aktiv profil!</string>
-    <string name="wizard_no_cob">Ukjent COB! BS-verdier mangler eller nylig oppstart av appen?</string>
     <string name="wizard_carbs_constraint">Brudd på karbo-begrensninger!</string>
-    <string name="wizard_explain_calc">Kalk (IK: %1$.1f, ISF: %2$.1f)</string>
-    <string name="wizard_explain_carbs">Karbo: %1$.2fE</string>
-    <string name="wizard_explain_cob">COB: %1$.0fg %2$.2fE</string>
-    <string name="wizard_explain_bg">BS: %1$.2fE</string>
-    <string name="wizard_explain_iob">IOB: %1$.2fE</string>
-    <string name="wizard_explain_superbolus">Superbolus: %1$.2fE</string>
-    <string name="wizard_explain_trend">15\' trend: %1$.2fE</string>
     <string name="wizard_trend_detail">15min trend (%1$s %2$s)</string>
-    <string name="wizard_explain_percent">Prosent: %1$.2fE x %2$d%% ≈ %3$.2fE</string>
     <string name="wizard_constraint_bolus_size">Insulinbegrensning nådd!\nKan ikke levere %1$.2fE</string>
-    <string name="wizard_explain_tt">Midl. mål: %1$s</string>
-    <string name="wizard_explain_tt_to">%1$s til %2$s</string>
     <string name="wizard_pump_not_available">Ingen pumpe tilgjengelig!</string>
+    <string name="quick_wizard_not_available">Valgt Hurtigknapp er ikke lenger tilgjengelig. Oppdater flisen</string>
     <string name="quickwizard_managemnt">Hurtigknapp</string>
     <!--    Preferences-->
     <string name="child">Barn</string>
@@ -817,12 +871,14 @@
     <string name="clear_cloud_action">Tøm innstillinger</string>
     <string name="clear_cloud_settings">Tøm skyinnstillinger</string>
     <string name="clear_cloud_settings_message">Dette vil bytte til lokal lagring og fjerne autorisasjon. Fortsette?</string>
+    <string name="cloud_revoke_incomplete">Skyinnstillingene er slettet på denne enheten, men kontoen kunne ikke nås for å tilbakekalle tilgangen fullstendig. Du bør vurdere å fjerne den manuelt i kontoinnstillingene.</string>
     <string name="cloud_connection_failed">Tilkobling til skylagring mislyktes</string>
     <string name="cloud_reauthorize_message">Tilkobling til skylagring mislyktes. Vil du autentisere på nytt?</string>
     <string name="reauthorize">Autentiser på nytt</string>
     <string name="cloud_auth_success">Autentisering av skylagring vellykket</string>
     <string name="authorization_status">Autorisasjonsstatus</string>
-    <string name="format_hour_minute">%1$dt %2$dm</string>
+    <string name="format_hour_minute" comment="%1$d=hours, %2$d=minutes. Example: 1 h 23 min">%1$d t %2$d min</string>
+    <string name="format_hours_only" comment="%1$d=hours, when minutes are zero. Example: 4 h">%1$d t</string>
     <!-- datetime layout -->
     <string name="event_time_label">Tidspunkt for hendelse</string>
     <!-- BluetoothDevicePreference -->
@@ -832,6 +888,7 @@
     <!--    Pump pair/unpair (shared) -->
     <string name="pump_pair">Paring</string>
     <string name="pump_unpair">Opphev paring</string>
+    <string name="pump_unpair_confirm_title">Fjern paring av pumpen?</string>
     <string name="pump_paired" comment="26 characters max for translation">Pumpe sammenkoblet</string>
     <!--    BlePreCheck-->
     <string name="ble_not_supported">Lavenergi Bluetooth er ikke støttet.</string>
@@ -996,6 +1053,7 @@
     <string name="database_cleanup">Opprydding av databasen</string>
     <string name="nav_resetdb">Tilbakestill databaser</string>
     <!--    BLE Scan Step (shared pump pairing) -->
+    <string name="step_ble_scan">Finn pumpe</string>
     <string name="ble_scan_select_pump">Velg pumpen din fra listen nedenfor</string>
     <string name="ble_scan_scanning">Skanner etter enheter…</string>
     <!-- Graph configuration -->
@@ -1016,6 +1074,4 @@
     <string name="sensitivity_shortname" comment="Short label for Sensitivity/Autosens graph series">SENS%</string>
     <string name="variable_sensitivity_shortname" comment="Short label for Variable Sensitivity graph series">DISF</string>
     <string name="steps_shortname" comment="Short label for Steps graph series">SKRITT</string>
-    <string name="remove_items">Fjern elementer</string>
-    <string name="sort_items">Sorter elementer</string>
 </resources>

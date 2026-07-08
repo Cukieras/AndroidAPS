@@ -34,6 +34,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import app.aaps.core.ui.R
+import app.aaps.core.ui.compose.ExcludeFromJacocoGeneratedReport
 
 /**
  * Dialog for querying a free-form password with optional explanation and warning messages.
@@ -50,6 +51,7 @@ fun QueryAnyPasswordDialog(
     title: String,
     passwordExplanation: String? = null,
     passwordWarning: String? = null,
+    errorMessage: String? = null,
     onConfirm: (String) -> Unit,
     onCancel: () -> Unit
 ) {
@@ -104,6 +106,8 @@ fun QueryAnyPasswordDialog(
                     value = passwordText,
                     onValueChange = { passwordText = it },
                     label = { Text(stringResource(R.string.protection_password_hint)) },
+                    isError = errorMessage != null,
+                    supportingText = errorMessage?.let { msg -> { Text(msg, color = MaterialTheme.colorScheme.error) } },
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Password,
@@ -111,8 +115,10 @@ fun QueryAnyPasswordDialog(
                     ),
                     keyboardActions = KeyboardActions(
                         onDone = {
-                            keyboardController?.hide()
-                            onConfirm(passwordText)
+                            if (passwordText.isNotBlank()) {
+                                keyboardController?.hide()
+                                onConfirm(passwordText)
+                            }
                         }
                     ),
                     singleLine = true,
@@ -124,6 +130,7 @@ fun QueryAnyPasswordDialog(
         },
         confirmButton = {
             TextButton(
+                enabled = passwordText.isNotBlank(),
                 onClick = {
                     keyboardController?.hide()
                     onConfirm(passwordText)
@@ -141,6 +148,7 @@ fun QueryAnyPasswordDialog(
     )
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview(showBackground = true)
 @Composable
 private fun QueryAnyPasswordDialogPreview() {

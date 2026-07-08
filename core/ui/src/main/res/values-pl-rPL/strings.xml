@@ -14,10 +14,7 @@
     <string name="failed_update_basal_profile">Nieudane uaktualnienie profilu bazy</string>
     <string name="no_valid_basal_rate">Brak prawidłowej dawki bazowej odczytanej z pompy</string>
     <string name="limiting_iob">Ograniczam IOB do %1$.1f U z uwagi na %2$s</string>
-    <string name="loop_disabled">PĘTLA WYLĄCZONA Z UWAGI NA OGRANICZENIA</string>
     <string name="event_type">Typ zdarzenia</string>
-    <string name="mgdl">mg/dl</string>
-    <string name="mmol">mmol/l</string>
     <string name="save">ZACHOWAJ</string>
     <string name="snooze">Wycisz</string>
     <string name="virtual_pump">Pompa wirtualna</string>
@@ -41,7 +38,6 @@
     <string name="mute">Wycisz</string>
     <string name="success">Sukces</string>
     <string name="advanced_settings_title">Ustawienia zaawansowane</string>
-    <string name="extendedbolusdeliveryerror">Błąd dostarczania bolusa przedłużonego</string>
     <string name="extended_bolus">Bolus Przedłużony</string>
     <string name="paused">Wstrzymano</string>
     <string name="tdd_total">TDD Całkowita</string>
@@ -51,7 +47,6 @@
     <string name="formatsignedinsulinunits">%1$+.2f U</string>
     <string name="format_carbs">%1$d g</string>
     <string name="format_hours">%1$.2f h</string>
-    <string name="format_mins">%1$d min.</string>
     <string name="objectives">Zadania</string>
     <string name="please_wait">Proszę czekać…</string>
     <string name="stop">Stop</string>
@@ -168,7 +163,6 @@
     <string name="basalprofilenotaligned">Wartości bazy nie są ustawione w pełnych godzinach: %1$s</string>
     <string name="minimalbasalvaluereplaced">Wartość bazy zastąpiona minimalną obsługiwaną wartością: %1$s</string>
     <string name="maximumbasalvaluereplaced">Wartość bazy zastąpiona maksymalną obsługiwaną wartością: %1$s</string>
-    <string name="profile_per_unit">/U</string>
     <string name="profile_ins_units_per_hour">U/h</string>
     <string name="profile_carbs_per_unit">g/U</string>
     <!--    ProfileFunction-->
@@ -216,6 +210,8 @@
     <string name="pump_battery_change">Zmiana baterii pompy</string>
     <string name="temporary_target">Cel tymczasowy (TT)</string>
     <string name="running_mode">Tryb pracy</string>
+    <!-- Client-control action labels (shown in the pending/failure modal as "Couldn't {label}") -->
+    <!-- Client-control failure reasons (mapped from a FailureReason code on the showing device) -->
     <string name="careportal_temporarytargetvalue">Wartość celu tymczasowego</string>
     <string name="careportal_temporarytargetcancel">Odrzuć Cel tymczasowy</string>
     <string name="boluswizard">Kalkulator bolusa</string>
@@ -418,7 +414,6 @@
     <string name="basal">Baza</string>
     <string name="basalpct">Baza %</string>
     <string name="sensitivity">Wrażliwość</string>
-    <string name="isf_for_carbs">ISF dla Kalkulatora i Absorpcji węglowodanów: %1$.1f</string>
     <string name="autosens_long">Wartość Autosens: %.0f%%</string>
     <string name="algorithm_long">Autosens w algorytmie: %.0f%%</string>
     <!-- Autotune -->
@@ -436,22 +431,10 @@
     <string name="bolus_recorded_only">Bolus zostanie jedynie odnotowany (nie będzie podany przez pompę)</string>
     <string name="advisoralarm">Uruchom alarm kiedy będzie czas na jedzenie</string>
     <string name="no_action_selected">Nie wybrano żadnej akcji, zdarzenie nie będzie wprowadzone</string>
-    <string name="carb_equal_zero_no_action">Węglowodany = 0. Nie podjęto żadnych działań!</string>
     <string name="wizard_no_actual_bg">Brak niezbędnego do obliczeń bieżącego pomiaru glikemi!</string>
     <string name="wizard_no_active_profile">Nie ustawiono aktywnego profilu!</string>
-    <string name="wizard_no_cob">Nieznane COB! Może brakuje odczytu glikemii lub niedawno zrestartowano aplikację?</string>
     <string name="wizard_carbs_constraint">Naruszenie ograniczeń węglowodanów!</string>
-    <string name="wizard_explain_calc">Kalk (IC: %1$.1f, ISF: %2$.1f)</string>
-    <string name="wizard_explain_carbs">Węgle: %1$.2fU</string>
-    <string name="wizard_explain_cob">COB: %1$.0fg %2$.2fU</string>
-    <string name="wizard_explain_bg">Glikemia: %1$.2fU</string>
-    <string name="wizard_explain_iob">IOB: %1$.2fU</string>
-    <string name="wizard_explain_superbolus">Superbolus: %1$.2fU</string>
-    <string name="wizard_explain_trend">Trend 15min.: %1$.2fU</string>
-    <string name="wizard_explain_percent">Procentowo: %1$.2fU x %2$d%% ≈ %3$.2fU</string>
     <string name="wizard_constraint_bolus_size">Naruszenie ograniczeń insuliny!\nNie można podać %1$.2fU</string>
-    <string name="wizard_explain_tt">CelTymcz.: %1$s</string>
-    <string name="wizard_explain_tt_to">%1$s do %2$s</string>
     <string name="wizard_pump_not_available">Pompa niedostępna!</string>
     <!--    Preferences-->
     <string name="child">Dziecko</string>
@@ -522,7 +505,6 @@
     <!-- Export destination chip labels -->
     <!-- Maintenance bottom sheet descriptions -->
     <!-- Cloud directory dialog (Compose) -->
-    <string name="format_hour_minute">%1$dh %2$dm</string>
     <!-- datetime layout -->
     <string name="event_time_label">Czas zdarzenia</string>
     <!-- BluetoothDevicePreference -->

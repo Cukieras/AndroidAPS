@@ -15,7 +15,6 @@
     <string name="pump_sync_error">Feil ved synkronisering av historikk fra pumpe, en post har blitt hoppet over. Sjekk behandlingsfanen for å kontrollere om bolusdosen er synkronisert riktig. Slumre og hvis feilen kommer tilbake bytt patch eller pumpebase.</string>
     <string name="patch_reset_after_primed_error">Tilbakestilling ble oppdaget etter priming! Fjern patch og sett på et nytt.</string>
     <!-- overview fragment -->
-    <string name="last_connection_label">Siste tilkobling</string>
     <string name="active_bolus_label">Aktiv bolus</string>
     <string name="pump_state_label">Pumpestatus</string>
     <string name="active_alarms_label">Aktive alarmer</string>
@@ -51,6 +50,14 @@
     <string name="pump_time_update_failed">Kunne ikke oppdatere tidssone på pumpen. Bekreft meldingen og oppdater manuelt.</string>
     <string name="bolus_error">Bolus feilet</string>
     <!-- Status strings -->
+    <string name="status_idle">Uvirksom</string>
+    <string name="status_filled">Fylt</string>
+    <string name="status_priming">Primer</string>
+    <string name="status_primed">Primet</string>
+    <string name="status_ejecting">Tømmer</string>
+    <string name="status_ejected">Tømt</string>
+    <string name="status_active">Aktiv</string>
+    <string name="status_stopped">Stoppet</string>
     <!-- wizard-->
     <string name="retry">Prøv igjen</string>
     <string name="step_prepare_patch">Aktivere patch</string>
@@ -65,11 +72,12 @@
     <string name="step_deactivate">Deaktivere patch</string>
     <string name="step_deactivating">Deaktiverer...</string>
     <string name="step_deactivate_complete">Patch deaktivert</string>
+    <string name="unpair_confirm_message">Dette vil slette det lagrede pumpens serienummer og koble fra. Aktiver en ny patch for å skanne etter en pumpe.</string>
     <string name="step_retry_activation">Aktivering pågår</string>
     <string name="unexpected_state">Uventet status: %1$s</string>
+    <string name="ble_scan_connect_pump_base_first">Koble pumpebasen til et nytt patch for å slå den på, og velg den deretter fra listen nedenfor.</string>
     <string name="patch_begin_activation">Ingen aktiv patch. Trykk <b>Neste</b> for å starte aktiveringsprosessen.</string>
-    <string name="patch_not_active_note">Pumpebase skal ikke kobles til patch før neste steg!</string>
-    <string name="connect_pump_base">Koble pumpebase til ny patch, fjern overflødig luft og full med insulin. Deretter trykk <b>Neste</b>.</string>
+    <string name="connect_pump_base">Kontroller at pumpebasen er koblet til patchen, fjern eventuell restluft og fyll med insulin, og trykk deretter på <b>Neste</b>.</string>
     <string name="note_min_70_units">Merk: Minimum 70 enheter kreves for aktivering.</string>
     <string name="reservoir_text_and_level">Reservoar: %.2f E</string>
     <string name="do_not_attach_to_body">Ikke koble patch til kroppen enda.</string>

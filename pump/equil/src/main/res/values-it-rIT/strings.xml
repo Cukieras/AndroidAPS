@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="equil_name">Equil</string>
     <string name="equil_pump_description">Pompa Patch Equil 5.3 o più recente </string>
     <!--  start  -->
     <string name="equil_basal_speed">Basale originale</string>
@@ -33,11 +34,11 @@
     <string name="equil_change">Cambia Micro</string>
     <string name="equil_change_content">Si prega di staccare il micro dalla base.</string>
     <string name="equil_unpair_alert">Sei sicuro di voler rinunciare al controllo di %1$s?</string>
-    <string name="equil_devices_number_hint">Numero del dispositivo</string>
     <string name="equil_record_basal">Tasso basale %1$s U/H</string>
     <string name="equil_record_basal_temp">Tasso basale temporaneo %1$s U/H</string>
     <string name="equil_record_bolus">Bolus %1$s U</string>
     <string name="equil_error_set_temp_basal_failed_validation">La durata del TBR deve essere maggiore di zero e un multiplo di %1$s minuti.</string>
+    <string name="equil_basal_exceeds_max">La velocità basale del profilo %1$s U/h supera la velocità basale massima del microinfusore %2$s U/h. Aumenta l\'impostazione basale massima e ricollega la pompa.</string>
     <string name="equil_not_enough_insulin">Insulina nel serbatoio insufficiente</string>
     <string name="equil_low_battery">Batteria bassa</string>
     <string name="equil_low_insulin">Insulina nel serbatoio insufficiente</string>
@@ -139,7 +140,6 @@ Regola password: deve contenere 4 caratteri, scelti tra ABCDEF0123456789.</strin
     <string name="equil_unbind">Disaccoppia dispositivo</string>
     <string name="equil_device_unpaired">Dispositivo disaccoppiato</string>
     <string name="equil_assemble">Si prega di assemblare il micro, riempire il serbatoio e caricaere la batteria</string>
-    <string name="equil_devices_number">Inserisci Il Nuovo ID Del Micro</string>
     <string name="equil_pair_password_title">Inserisci la password per %1$s</string>
     <string name="equil_insert">Si prega di caricare il serbatoio fino a quando non vi è una goccia di insulina sulla punta dell’ago</string>
     <string name="equil_insert2">Il Micro non deve trovarsi sulla sua base.</string>
@@ -147,6 +147,5 @@ Regola password: deve contenere 4 caratteri, scelti tra ABCDEF0123456789.</strin
     <string name="equil_hint2">Riempi la cannula</string>
     <string name="equil_pump_updated">Micro aggiornato</string>
     <string name="equil_replace_reservoir">Il serbatoio è vuoto. Sostituire il serbatoio</string>
-    <string name="error_mustbe6hexadidits">Deve essere 6 caratteri tra ABCDEF0123456789</string>
     <string name="equil_removed_anyway">Comando disaccoppiamento non riuscito. Il micro verrà comunque rimosso. La password impostata durante l\'accoppiamento non verrà rimossa dal micro.</string>
 </resources>

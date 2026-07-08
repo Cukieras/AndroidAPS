@@ -1,14 +1,14 @@
 package app.aaps.core.ui.compose.preference
 
 import androidx.compose.runtime.compositionLocalOf
-import app.aaps.core.keys.interfaces.PreferenceVisibilityContext
+import app.aaps.core.keys.interfaces.VisibilityContext
 import app.aaps.core.ui.compose.ComposeScreenContent
 
 /**
  * CompositionLocal for providing PreferenceVisibilityContext to preference composables.
  * Used by AdaptivePreferenceList and PreferenceContentExtensions to evaluate visibility conditions.
  */
-val LocalVisibilityContext = compositionLocalOf<PreferenceVisibilityContext?> { null }
+val LocalVisibilityContext = compositionLocalOf<VisibilityContext?> { null }
 
 /**
  * CompositionLocal for password verification function.
@@ -23,6 +23,12 @@ val LocalCheckPassword = compositionLocalOf<((String, String) -> Boolean)?> { nu
  * Signature: (password: String) -> String
  */
 val LocalHashPassword = compositionLocalOf<((String) -> String)?> { null }
+
+/**
+ * CompositionLocal for clearing the stored unattended-export password.
+ * Invoked when the master password changes so a stale export password can't outlive the change.
+ */
+val LocalClearExportPasswordStore = compositionLocalOf<(() -> Unit)?> { null }
 
 /**
  * CompositionLocal for highlighting a specific preference key.

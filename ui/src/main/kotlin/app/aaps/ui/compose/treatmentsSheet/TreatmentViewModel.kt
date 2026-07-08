@@ -76,6 +76,8 @@ class TreatmentViewModel @Inject constructor(
             preferences.observe(BooleanKey.OverviewShowCarbsButton).drop(1).map {},
             preferences.observe(BooleanKey.OverviewShowWizardButton).drop(1).map {},
             preferences.observe(BooleanKey.GeneralSimpleMode).drop(1).map {},
+            // QuickWizard entries changed (local edit or synced from the main phone).
+            quickWizard.changes.drop(1).map {},
         ).onEach { refreshState() }.launchIn(viewModelScope)
         rxBus.toFlow(EventRefreshOverview::class.java)
             .onEach { refreshState() }.launchIn(viewModelScope)
@@ -91,7 +93,7 @@ class TreatmentViewModel @Inject constructor(
             val showCgm = elementAvailability.isAvailable(ElementType.CGM_XDRIP) && preferences.get(BooleanKey.OverviewShowCgmButton)
             val showCalibration = elementAvailability.isAvailable(ElementType.CALIBRATION)
                 && iobCobCalculator.ads.actualBg() != null
-                && preferences.get(BooleanKey.OverviewShowCalibrationButton)
+                && (elementAvailability.isCalibrationOverrideActive() || preferences.get(BooleanKey.OverviewShowCalibrationButton))
             val showTreatment = preferences.get(BooleanKey.OverviewShowTreatmentButton)
             val showInsulin = preferences.get(BooleanKey.OverviewShowInsulinButton)
             val showCarbs = preferences.get(BooleanKey.OverviewShowCarbsButton)

@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="carbs_constraint_applied">Karbohydrat-begrensning utført</string>
+    <string name="cancel_action_with_details" comment="%1$s=the word Cancel, %2$s=the active item being cancelled (e.g. a running temp basal or extended bolus description). Example: 'Cancel 150% 30min'">%1$s %2$s</string>
     <string name="no_temp_basal_running">Ingen midlertidig basal kjører</string>
-    <string name="temp_target_short">Midlertidig mål</string>
     <string name="start_activity_tt">Start midlertidig mål for Aktivitet</string>
     <string name="start_eating_soon_tt">Start midlertidig mål for Spise snart</string>
     <string name="start_hypo_tt">Start midlertidig mål for Hypo</string>
@@ -12,6 +11,7 @@
     <string name="widget_description">AAPS widget</string>
     <string name="widget_bg_graph_description">AAPS BS-graf</string>
     <string name="widget_compact_bg_description">AAPS BS + IOB + COB (kompakt)</string>
+    <string name="widget_small_description">AAPS liten</string>
     <!--     Activities-->
     <string name="activity_monitor">Aktivitetsmonitor</string>
     <string name="time_range">Tidsrom</string>
@@ -41,14 +41,6 @@
     <string name="bg_sensor">Sensor</string>
     <!-- WizardDialog -->
     <!-- SiteRotationDialog -->
-    <string name="site_man">Mann</string>
-    <string name="site_woman">Kvinne</string>
-    <string name="site_child">Barn</string>
-    <string name="user_profile">Brukerprofil</string>
-    <string name="user_profile_description">Brukerprofilbeskrivelsen brukes til å vise de mest brukte stedene for en mann, en kvinne eller et barn</string>
-    <string name="site_management">Profil for stedsadministrasjon</string>
-    <string name="site_management_description">Her angir du om du vil håndtere pumpeområde, sensorområde eller begge deler. Denne innstillingen brukes til automatisk å vise dialogen for stedsadministrasjon hver gang en ny registrering oppdages</string>
-    <string name="update_site_change">Oppdater stedplassering</string>
     <string name="edit_site">Rediger</string>
     <string name="record_site_location">Infusjonssted: %1$s</string>
     <string name="record_site_arrow">Områdepil: %1$s</string>
@@ -136,29 +128,32 @@
     <!-- Insulin Management -->
     <string name="missing_insulin_name">Mangler insulinnavn</string>
     <string name="insulin_name_exists">Insulinnavnet %1$s finnes allerede. Velg et nytt navn</string>
+    <string name="insulin_external_update_title">Insulinkonfigurasjonen er endret</string>
+    <string name="insulin_external_update_message">En paret klient har endret insulinkonfigurasjonen. Trykk OK for å laste inn endringene og forkaste ulagrede endringer, eller Avbryt for å fortsette redigeringen (neste lagring vil overskrive deres endringer).</string>
+    <string name="insulin_edit_target_gone">Denne insulinen ble fjernet et annet sted, så endringen kunne ikke lagres. Listen er lastet inn på nytt.</string>
+    <string name="insulin_activation_applied">Insulinaktivering utført</string>
+    <!-- Client→master round-trip pending dialog -->
+    <string name="clientcontrol_pending_working_title">Utfører…</string>
+    <string name="clientcontrol_pending_working_text">Venter på bekreftelse fra hovedenhet…</string>
+    <string name="clientcontrol_pending_rejected_title">Ikke utført</string>
+    <string name="clientcontrol_pending_failed_format">%1$s kunne ikke utføres.\n%2$s</string>
+    <!-- Partial success (e.g. a scene chained but some of the target\'s actions failed) — not a rejection -->
+    <string name="clientcontrol_pending_partial_title">Delvis utført</string>
+    <!-- %1$s = action label -->
+    <string name="clientcontrol_pending_partial_format">%1$s ble utført, men enkelte handlinger kunne ikke utføres.\nKontroller gjeldende status.</string>
+    <string name="clientcontrol_pending_unconfirmed_title">Kunne ikke bekrefte</string>
+    <!-- %1$s = action label, %2$s = reason. Sent but unconfirmed → will reconcile via sync-back -->
+    <string name="clientcontrol_pending_unconfirmed_format">%1$s ble sendt, men ingen bekreftelse ble mottatt.\n%2$s\nDet vil vises her dersom/når hovedenheten utfører handlingen.</string>
+    <string name="clientcontrol_pending_stop_waiting">Slutt å vente</string>
     <string name="a11y_add_new_insulin">Legg til nytt insulin</string>
     <string name="a11y_delete_current_insulin">Slett nåværende insulin</string>
-    <string name="activate_insulin_no_profile">Ingen aktiv profil funnet</string>
-    <string name="activate_insulin_new_insulin">Nytt insulin: %1$s</string>
-    <string name="activate_insulin_remaining">Gjenværende: %1$d min</string>
-    <string name="activate_insulin_profile_switch">Profilbytte vil bli opprettet:\n\n<b>%1$s</b></string>
     <string name="load_peak_from">Last topp fra</string>
     <string name="cannot_delete_last_insulin">Kan ikke slette siste insulin</string>
     <string name="cannot_delete_active_insulin">Kan ikke slette aktivt insulin</string>
     <string name="reuse_profile_pct_hours">Gjenbruk %1$d%% %2$dt</string>
-    <string name="timeshift_label">Tidsforskyving</string>
     <string name="percentage_label">Prosent</string>
     <!-- LoopDialog -->
-    <string name="suspendloopfor1h">Pause loop i 1t</string>
-    <string name="suspendloopfor2h">Pause loop i 2t</string>
-    <string name="suspendloopfor3h">Pause loop i 3t</string>
-    <string name="suspendloopfor10h">Pause loop i 10t</string>
     <string name="disconnectpump">Koble fra pumpen</string>
-    <string name="disconnectpumpfor15m">Koble fra pumpen i 15 min</string>
-    <string name="disconnectpumpfor30m">Koble fra pumpen i 30 min</string>
-    <string name="disconnectpumpfor1h">Koble fra pumpen i 1t</string>
-    <string name="disconnectpumpfor2h">Koble fra pumpen i 2t</string>
-    <string name="disconnectpumpfor3h">Koble fra pumpen i 3t</string>
     <string name="resume">Gjenoppta</string>
     <string name="reconnect">Koble til pumpen</string>
     <string name="duration15m">15 min</string>
@@ -189,6 +184,7 @@
     <string name="active_profile_indicator">AKTIV</string>
     <string name="confirm_remove_profile">Fjern profil \"%1$s\"?</string>
     <string name="confirm_clone_profile">Klon profil \"%1$s\"?</string>
+    <string name="profile_no_longer_exists">Profillisten er endret i mellomtiden – prøv på nytt</string>
     <string name="tbr_type_flag_extended">E</string>
     <string name="tbr_type_flag_suspended">S</string>
     <string name="tbr_type_flag_emulated_suspended">ES</string>
@@ -290,8 +286,6 @@
     <string name="quick_launch_no_profiles">Opprett profiler i Lokal profil for å bruke dem her</string>
     <string name="quick_launch_edit_profile_preset">Rediger forhåndsinnstilling for profil</string>
     <string name="quick_launch_profile_permanent">Permanent</string>
-    <string name="quick_launch_profile_confirm_pct">%1$d%%</string>
-    <string name="quick_launch_profile_confirm_dur">%1$d min</string>
     <string name="select_arrow">Velg pil</string>
     <string name="loop_accept_nav_label">Loop</string>
     <string name="loop_accept_set_basal_question">Godta ny midlertidig basal:</string>
@@ -301,4 +295,15 @@
     <string name="widget_rm_disabled">Deaktivert</string>
     <string name="widget_rm_suspended">Pauset</string>
     <string name="widget_rm_resume">Gjenoppta</string>
+    <!-- Calibration entry rejection reasons -->
+    <string name="cal_reject_delta_too_high">Kalibrering ble ikke lagret: Glukosen endrer seg for raskt (Δ %1$s %3$s per 5 min, grense %2$s). Prøv igjen når glukosen er stabil.</string>
+    <string name="cal_reject_no_pair">Kalibrering ble ikke lagret: Ingen CGM-måling funnet de siste 10 minuttene.</string>
+    <string name="cal_reject_warmup">Kalibrering ble ikke lagret: Sensoren er fortsatt i den 2 timer lange oppvarmingsperioden.</string>
+    <string name="cal_reject_no_session">Kalibrering ble ikke lagret: Ingen aktiv sensorsesjon. Registrer et sensorbytte først.</string>
+    <!-- Calibration preflight messages shown in the dialog before submit -->
+    <string name="cal_precheck_warmup">Sensoren er fortsatt i oppvarmingsperioden. Kalibrering blir tilgjengelig kl. %1$s.</string>
+    <string name="cal_precheck_no_session">Ingen aktiv sensorsesjon.</string>
+    <string name="cal_precheck_no_pair">Ingen CGM-måling de siste 10 minuttene. Kontroller sensorforbindelsen.</string>
+    <string name="cal_precheck_delta_too_high">Glukosen endrer seg for raskt (Δ %1$s %3$s per 5 min, grense %2$s). Vent til den er stabil.</string>
+    <string name="cal_precheck_mark_sensor_change">Registrer sensorbytte</string>
 </resources>

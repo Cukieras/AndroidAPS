@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.core.content.ContextCompat
+import androidx.hilt.work.HiltWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import app.aaps.core.data.model.GV
@@ -26,6 +27,7 @@ import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.source.BgSource
 import app.aaps.core.interfaces.source.DexcomBoyda
 import app.aaps.core.interfaces.utils.DateUtil
+import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
 import app.aaps.core.keys.BooleanKey
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.objects.workflow.LoggingWorker
@@ -34,6 +36,9 @@ import app.aaps.core.utils.receivers.DataInbox
 import app.aaps.core.utils.receivers.Inbox
 import app.aaps.plugins.source.activities.RequestDexcomPermissionActivity
 import app.aaps.plugins.source.compose.BgSourceComposeContent
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -91,34 +96,49 @@ class DexcomPlugin @Inject constructor(
             }
         }
 
-    override fun onStart() {
+    override suspend fun onStart() {
         super.onStart()
         requestPermissionIfNeeded()
     }
 
     // cannot be inner class because of needed injection
-    class DexcomWorker(
-        context: Context,
-        params: WorkerParameters
-    ) : LoggingWorker(context, params, Dispatchers.IO) {
-
-        @Inject lateinit var dexcomPlugin: DexcomPlugin
-        @Inject lateinit var preferences: Preferences
-        @Inject lateinit var dateUtil: DateUtil
-        @Inject lateinit var dataInbox: DataInbox
-        @Inject lateinit var persistenceLayer: PersistenceLayer
-        @Inject lateinit var profileUtil: ProfileUtil
+    @HiltWorker
+    class DexcomWorker @AssistedInject constructor(
+        @Assisted context: Context,
+        @Assisted params: WorkerParameters,
+        aapsLogger: AAPSLogger,
+        fabricPrivacy: FabricPrivacy,
+        private val dexcomPlugin: DexcomPlugin,
+        private val preferences: Preferences,
+        private val dateUtil: DateUtil,
+        private val dataInbox: DataInbox,
+        private val persistenceLayer: PersistenceLayer,
+        private val profileUtil: ProfileUtil
+    ) : LoggingWorker(context, params, Dispatchers.IO, aapsLogger, fabricPrivacy) {
 
         @SuppressLint("CheckResult")
         override suspend fun doWorkAndLog(): Result {
-            if (!dexcomPlugin.isEnabled()) return Result.success(workDataOf("Result" to "Plugin not enabled"))
+            // Drain first, unconditionally: drain() clears DataInbox's pending-work gate, so every
+            // enqueued worker MUST reach it. If we returned early (plugin disabled) before draining,
+            // the gate would stay set and silently block all future enqueues for this slot until
+            // the process restarts. Bundles drained while disabled are intentionally discarded.
             val bundles = dataInbox.drain(DexcomInbox)
+            if (!dexcomPlugin.isEnabled()) return Result.success(workDataOf("Result" to "Plugin not enabled"))
             if (bundles.isEmpty()) return Result.success(workDataOf("Result" to "no data"))
 
             var hadFailure = false
-            for (bundle in bundles) {
+            for ((index, bundle) in bundles.withIndex()) {
                 try {
                     processBundle(bundle)
+                } catch (e: CancellationException) {
+                    // WorkManager stopped this run. The coroutine contract requires
+                    // CancellationException to propagate, otherwise the loop keeps fighting a
+                    // cancelled Job and spams failures for every remaining bundle. drain() already
+                    // removed the whole batch, so re-queue this bundle plus everything not yet
+                    // processed before propagating — otherwise those readings are lost.
+                    // requeue/enqueue are non-suspending, so they complete despite cancellation.
+                    dataInbox.requeue(DexcomInbox, bundles.subList(index, bundles.size))
+                    throw e
                 } catch (e: Exception) {
                     // processBundle early-returns on malformed-bundle conditions; anything that
                     // reaches the catch is a real exception (typically a DB write). Surface as

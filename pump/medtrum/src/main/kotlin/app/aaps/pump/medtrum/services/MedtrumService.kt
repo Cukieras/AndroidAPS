@@ -7,7 +7,6 @@ import android.os.IBinder
 import android.os.SystemClock
 import app.aaps.core.data.model.BS
 import app.aaps.core.data.time.T
-import app.aaps.core.interfaces.constraints.ConstraintsChecker
 import app.aaps.core.interfaces.insulin.ConcentrationHelper
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
@@ -21,11 +20,11 @@ import app.aaps.core.interfaces.pump.DetailedBolusInfo
 import app.aaps.core.interfaces.pump.DetailedBolusInfoStorage
 import app.aaps.core.interfaces.pump.PumpInsulin
 import app.aaps.core.interfaces.pump.PumpSync
-import app.aaps.core.interfaces.queue.Callback
 import app.aaps.core.interfaces.queue.CommandQueue
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.rx.AapsSchedulers
 import app.aaps.core.interfaces.rx.bus.RxBus
+import app.aaps.core.interfaces.rx.collectResilient
 import app.aaps.core.interfaces.rx.events.EventAppExit
 import app.aaps.core.interfaces.rx.events.EventPumpStatusChanged
 import app.aaps.core.interfaces.ui.UiInteraction
@@ -70,13 +69,12 @@ import dagger.android.DaggerService
 import dagger.android.HasAndroidInjector
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.kotlin.plusAssign
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
@@ -95,7 +93,6 @@ class MedtrumService : DaggerService(), MedtrumBleCallback {
     @Inject lateinit var medtrumPlugin: MedtrumPlugin
     @Inject lateinit var medtrumPump: MedtrumPump
     @Inject lateinit var activePlugin: ActivePlugin
-    @Inject lateinit var constraintChecker: ConstraintsChecker
     @Inject lateinit var uiInteraction: UiInteraction
     @Inject lateinit var notificationManager: NotificationManager
     @Inject lateinit var bleTransport: MedtrumBleTransport
@@ -137,90 +134,80 @@ class MedtrumService : DaggerService(), MedtrumBleCallback {
             .toObservable(EventAppExit::class.java)
             .observeOn(aapsSchedulers.io)
             .subscribe({ stopSelf() }, fabricPrivacy::logException)
-        preferences.observe(MedtrumStringNonKey.SnInput).drop(1).onEach {
+        preferences.observe(MedtrumStringNonKey.SnInput).drop(1).collectResilient(scope, aapsLogger, LTag.PUMP) {
             aapsLogger.debug(LTag.PUMPCOMM, "Serial number changed, reporting new pump!")
             medtrumPump.loadUserSettingsFromSP()
             medtrumPump.deviceType = MedtrumSnUtil().getDeviceTypeFromSerial(medtrumPump.pumpSN).value
             medtrumPump.resetPatchParameters()
             pumpSync.connectNewPump()
             medtrumPump.setFakeTBRIfNotSet()
-        }.launchIn(scope)
-        preferences.observe(MedtrumBooleanKey.MedtrumWarningNotification).drop(1).onEach {
+        }
+        preferences.observe(MedtrumBooleanKey.MedtrumWarningNotification).drop(1).collectResilient(scope, aapsLogger, LTag.PUMP) {
             medtrumPump.loadUserSettingsFromSP()
-        }.launchIn(scope)
-        preferences.observe(MedtrumIntKey.MedtrumPumpExpiryWarningHours).drop(1).onEach {
+        }
+        preferences.observe(MedtrumIntKey.MedtrumPumpExpiryWarningHours).drop(1).collectResilient(scope, aapsLogger, LTag.PUMP) {
             medtrumPump.loadUserSettingsFromSP()
-        }.launchIn(scope)
-        preferences.observe(MedtrumStringKey.MedtrumAlarmSettings).drop(1).onEach {
+        }
+        preferences.observe(MedtrumStringKey.MedtrumAlarmSettings).drop(1).collectResilient(scope, aapsLogger, LTag.PUMP) {
             medtrumPump.loadUserSettingsFromSP()
-            commandQueue.setUserOptions(object : Callback() {
-                override fun run() {
-                    if (medtrumPlugin.isInitialized() && !this.result.success) {
-                        notificationManager.post(
-                            NotificationId.PUMP_SETTINGS_FAILED,
-                            R.string.pump_setting_failed,
-                        )
-                    }
-                }
-            })
-        }.launchIn(scope)
-        preferences.observe(MedtrumBooleanKey.MedtrumPatchExpiration).drop(1).onEach {
-            medtrumPump.loadUserSettingsFromSP()
-            commandQueue.setUserOptions(object : Callback() {
-                override fun run() {
-                    if (medtrumPlugin.isInitialized() && !this.result.success) {
-                        notificationManager.post(
-                            NotificationId.PUMP_SETTINGS_FAILED,
-                            R.string.pump_setting_failed,
-                        )
-                    }
-                }
-            })
-        }.launchIn(scope)
-        preferences.observe(MedtrumIntKey.MedtrumHourlyMaxInsulin).drop(1).onEach {
-            medtrumPump.loadUserSettingsFromSP()
-            commandQueue.setUserOptions(object : Callback() {
-                override fun run() {
-                    if (medtrumPlugin.isInitialized() && !this.result.success) {
-                        notificationManager.post(
-                            NotificationId.PUMP_SETTINGS_FAILED,
-                            R.string.pump_setting_failed,
-                        )
-                    }
-                }
-            })
-        }.launchIn(scope)
-        preferences.observe(MedtrumIntKey.MedtrumDailyMaxInsulin).drop(1).onEach {
-            medtrumPump.loadUserSettingsFromSP()
-            commandQueue.setUserOptions(object : Callback() {
-                override fun run() {
-                    if (medtrumPlugin.isInitialized() && !this.result.success) {
-                        notificationManager.post(
-                            NotificationId.PUMP_SETTINGS_FAILED,
-                            R.string.pump_setting_failed,
-                        )
-                    }
-                }
-            })
-        }.launchIn(scope)
-        scope.launch {
-            medtrumPump.pumpStateFlow.collect { pumpState ->
-                handlePumpStateUpdate(pumpState)
+            val r = commandQueue.setUserOptions()
+            if (medtrumPlugin.isInitialized() && !r.success) {
+                notificationManager.post(
+                    NotificationId.PUMP_SETTINGS_FAILED,
+                    R.string.pump_setting_failed,
+                )
             }
         }
-        scope.launch {
-            medtrumPump.connectionStateFlow.collect { connectionState ->
-                handleConnectionStateChange(connectionState)
+        preferences.observe(MedtrumBooleanKey.MedtrumPatchExpiration).drop(1).collectResilient(scope, aapsLogger, LTag.PUMP) {
+            medtrumPump.loadUserSettingsFromSP()
+            val r = commandQueue.setUserOptions()
+            if (medtrumPlugin.isInitialized() && !r.success) {
+                notificationManager.post(
+                    NotificationId.PUMP_SETTINGS_FAILED,
+                    R.string.pump_setting_failed,
+                )
             }
         }
-        scope.launch {
-            medtrumPump.pumpWarningFlow.collect { pumpWarning ->
-                notifyPumpWarning(pumpWarning)
+        preferences.observe(MedtrumIntKey.MedtrumHourlyMaxInsulin).drop(1).collectResilient(scope, aapsLogger, LTag.PUMP) {
+            medtrumPump.loadUserSettingsFromSP()
+            val r = commandQueue.setUserOptions()
+            if (medtrumPlugin.isInitialized() && !r.success) {
+                notificationManager.post(
+                    NotificationId.PUMP_SETTINGS_FAILED,
+                    R.string.pump_setting_failed,
+                )
             }
+        }
+        preferences.observe(MedtrumIntKey.MedtrumDailyMaxInsulin).drop(1).collectResilient(scope, aapsLogger, LTag.PUMP) {
+            medtrumPump.loadUserSettingsFromSP()
+            val r = commandQueue.setUserOptions()
+            if (medtrumPlugin.isInitialized() && !r.success) {
+                notificationManager.post(
+                    NotificationId.PUMP_SETTINGS_FAILED,
+                    R.string.pump_setting_failed,
+                )
+            }
+        }
+        medtrumPump.pumpStateFlow.collectResilient(scope, aapsLogger, LTag.PUMP) { pumpState ->
+            handlePumpStateUpdate(pumpState)
+        }
+        medtrumPump.connectionStateFlow.collectResilient(scope, aapsLogger, LTag.PUMP) { connectionState ->
+            handleConnectionStateChange(connectionState)
+        }
+        medtrumPump.pumpWarningFlow.collectResilient(scope, aapsLogger, LTag.PUMP) { pumpWarning ->
+            notifyPumpWarning(pumpWarning)
         }
         scope.launch {
             while (true) {
-                checkExpiryWarning()
+                // Not a Flow, so collectResilient doesn't apply; guard the poll body so a single failure
+                // can't kill the loop and stop expiry checks for the rest of the service lifetime.
+                try {
+                    checkExpiryWarning()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    aapsLogger.error(LTag.PUMP, "checkExpiryWarning failed", e)
+                }
                 kotlinx.coroutines.delay(CHECK_EXPIRY_WARNING_TIME_MS)
             }
         }
@@ -328,7 +315,7 @@ class MedtrumService : DaggerService(), MedtrumBleCallback {
             notificationManager.post(
                 NotificationId.PUMP_TIMEZONE_UPDATE_FAILED,
                 R.string.pump_time_update_failed,
-                level = NotificationLevel.URGENT,
+                level = NotificationLevel.IMPORTANT,
             )
         }
     }
@@ -393,18 +380,24 @@ class MedtrumService : DaggerService(), MedtrumBleCallback {
         return sendPacketAndGetResponse(SetPatchPacket(injector))
     }
 
-    fun setBolus(detailedBolusInfo: DetailedBolusInfo): Boolean {
+    suspend fun setBolus(detailedBolusInfo: DetailedBolusInfo): Boolean {
+        // Reset the per-bolus verdict inputs (delivered amount + user-stop flag) FIRST — BEFORE the canSetBolus early
+        // return — so a rejected attempt (not connected / already in progress / stop pressed) can't leave
+        // deliverTreatment reading a STALE amount/stopped flag from a PREVIOUS bolus and mis-recording it as delivered.
+        // (bolusDone/bolusErrorReason stay below: canSetBolus reads bolusDone and sets bolusErrorReason on rejection.)
+        medtrumPump.bolusAmountDelivered = 0.0
+        medtrumPump.bolusStopped = false
         if (!canSetBolus()) return false
 
         val insulin = detailedBolusInfo.insulin
         medtrumPump.bolusDone = false
-        medtrumPump.bolusStopped = false
         medtrumPump.bolusErrorReason = null
 
         if (!sendBolusCommand(insulin)) {
             medtrumPump.bolusErrorReason = rh.gs(R.string.bolus_error_reason_unable_to_send_command)
             aapsLogger.error(LTag.PUMPCOMM, "Failed to set bolus")
-            commandQueue.readStatus(rh.gs(R.string.bolus_error), null) // make sure if anything is delivered (which is highly unlikely at this point) we get it
+            // Queue-worker deadlock guard — don't unwrap the .launch. See CommandQueue kdoc.
+            scope.launch { commandQueue.readStatus(rh.gs(R.string.bolus_error)) } // make sure if anything is delivered (which is highly unlikely at this point) we get it
             medtrumPump.bolusDone = true
             bolusProgressData.updateProgress(percent = 0, status = "")
             return false
@@ -418,16 +411,14 @@ class MedtrumService : DaggerService(), MedtrumBleCallback {
         detailedBolusInfo.timestamp = bolusStart // Make sure the timestamp is set to the start of the bolus
         detailedBolusInfoStorage.add(detailedBolusInfo) // will be picked up on reading history
         // Sync the initial bolus
-        val newRecord = runBlocking {
-            pumpSync.addBolusWithTempId(
-                timestamp = detailedBolusInfo.timestamp,
-                amount = PumpInsulin(detailedBolusInfo.insulin),
-                temporaryId = detailedBolusInfo.timestamp,
-                type = detailedBolusInfo.bolusType,
-                pumpType = medtrumPump.pumpType(),
-                pumpSerial = medtrumPump.pumpSN.toString(radix = 16)
-            )
-        }
+        val newRecord = pumpSync.addBolusWithTempId(
+            timestamp = detailedBolusInfo.timestamp,
+            amount = PumpInsulin(detailedBolusInfo.insulin),
+            temporaryId = detailedBolusInfo.timestamp,
+            type = detailedBolusInfo.bolusType,
+            pumpType = medtrumPump.pumpType(),
+            pumpSerial = medtrumPump.pumpSN.toString(radix = 16)
+        )
         if (newRecord) {
             aapsLogger.debug(
                 LTag.PUMPCOMM,
@@ -441,17 +432,15 @@ class MedtrumService : DaggerService(), MedtrumBleCallback {
 
         if (medtrumPump.bolusStopped && (bolusProgressData.state.value?.delivered?.cU ?: 0.0) == 0.0) {
             // In this case we don't get a bolus end event, so need to remove all the stuff added previously
-            val syncOk = runBlocking {
-                pumpSync.syncBolusWithTempId(
-                    timestamp = bolusStart,
-                    amount = PumpInsulin(0.0),
-                    temporaryId = bolusStart,
-                    type = detailedBolusInfo.bolusType,
-                    pumpId = bolusStart,
-                    pumpType = medtrumPump.pumpType(),
-                    pumpSerial = medtrumPump.pumpSN.toString(radix = 16)
-                )
-            }
+            val syncOk = pumpSync.syncBolusWithTempId(
+                timestamp = bolusStart,
+                amount = PumpInsulin(0.0),
+                temporaryId = bolusStart,
+                type = detailedBolusInfo.bolusType,
+                pumpId = bolusStart,
+                pumpType = medtrumPump.pumpType(),
+                pumpSerial = medtrumPump.pumpSN.toString(radix = 16)
+            )
             aapsLogger.debug(
                 LTag.PUMPCOMM,
                 "set bolus: **SYNC** EVENT BOLUS (tempId) ${dateUtil.dateAndTimeString(detailedBolusInfo.timestamp)} (${bolusStart}) Bolus: ${0.0}U SyncOK: $syncOk"
@@ -499,7 +488,14 @@ class MedtrumService : DaggerService(), MedtrumBleCallback {
 
         while (!medtrumPump.bolusStopped && !medtrumPump.bolusDone && !communicationLost) {
             SystemClock.sleep(100)
-            if (medtrumPump.bolusProgressLastTimeStamp > checkTime) checkTime = medtrumPump.bolusProgressLastTimeStamp
+            if (medtrumPump.bolusProgressLastTimeStamp > checkTime) {
+                // Progress resumed → reset the CONSECUTIVE-no-progress retry count. Without this the counter only
+                // ever grows: on a slow but LIVE bolus (large dose — 0.1U increments can be >20s apart on the tail)
+                // each gap burns a retry until the 3-strike limit forces a false "communication stopped" while the
+                // pump is still delivering. Resetting on progress means we only give up after genuinely-stalled retries.
+                checkTime = medtrumPump.bolusProgressLastTimeStamp
+                connectionRetryCounter = 0
+            }
             if (System.currentTimeMillis() - checkTime > T.secs(20).msecs()) {
                 if (connectionRetryCounter < 3) {
                     aapsLogger.warn(LTag.PUMPCOMM, "No bolus progress for 20 seconds, retrying connection")
@@ -531,11 +527,10 @@ class MedtrumService : DaggerService(), MedtrumBleCallback {
         SystemClock.sleep(2000)
 
         // Do not call update status directly, reconnection may be needed
-        commandQueue.loadEvents(object : Callback() {
-            override fun run() {
-                rxBus.send(EventPumpStatusChanged(rh.gs(R.string.getting_bolus_status)))
-            }
-        })
+        scope.launch {
+            commandQueue.loadEvents()
+            rxBus.send(EventPumpStatusChanged(rh.gs(R.string.getting_bolus_status)))
+        }
     }
 
     fun stopBolus() {
@@ -564,11 +559,10 @@ class MedtrumService : DaggerService(), MedtrumBleCallback {
 
         // Get history records, this will update the previous basals
         // Do not call update status directly, reconnection may be needed
-        commandQueue.loadEvents(object : Callback() {
-            override fun run() {
-                rxBus.send(EventPumpStatusChanged(rh.gs(R.string.getting_temp_basal_status)))
-            }
-        })
+        scope.launch {
+            commandQueue.loadEvents()
+            rxBus.send(EventPumpStatusChanged(rh.gs(R.string.getting_temp_basal_status)))
+        }
 
         return result
     }
@@ -578,11 +572,10 @@ class MedtrumService : DaggerService(), MedtrumBleCallback {
 
         // Get history records, this will update the previous basals
         // Do not call update status directly, reconnection may be needed
-        commandQueue.loadEvents(object : Callback() {
-            override fun run() {
-                rxBus.send(EventPumpStatusChanged(rh.gs(R.string.getting_temp_basal_status)))
-            }
-        })
+        scope.launch {
+            commandQueue.loadEvents()
+            rxBus.send(EventPumpStatusChanged(rh.gs(R.string.getting_temp_basal_status)))
+        }
 
         return result
     }
@@ -598,7 +591,7 @@ class MedtrumService : DaggerService(), MedtrumBleCallback {
         if (result) result = packet?.let { sendPacketAndGetResponse(it) } == true
 
         // Get history records, this will update the pump state and add changes in TBR to AAPS history
-        commandQueue.loadEvents(null)
+        scope.launch { commandQueue.loadEvents() }
 
         return result
     }
@@ -680,7 +673,7 @@ class MedtrumService : DaggerService(), MedtrumBleCallback {
                 notificationManager.post(
                     NotificationId.PATCH_NOT_ACTIVE,
                     R.string.patch_not_active,
-                    level = NotificationLevel.URGENT,
+                    level = NotificationLevel.IMPORTANT,
                 )
                 medtrumPump.setFakeTBRIfNotSet()
                 medtrumPump.clearAlarmState()
@@ -743,7 +736,7 @@ class MedtrumService : DaggerService(), MedtrumBleCallback {
                     R.string.pump_is_suspended,
                 )
                 // Pump will report proper TBR for this from loadEvents()
-                commandQueue.loadEvents(null)
+                scope.launch { commandQueue.loadEvents() }
             }
 
             MedtrumPumpState.HOURLY_MAX_SUSPENDED -> {
@@ -754,7 +747,7 @@ class MedtrumService : DaggerService(), MedtrumBleCallback {
                     soundRes = app.aaps.core.ui.R.raw.alarm
                 )
                 // Pump will report proper TBR for this from loadEvents()
-                commandQueue.loadEvents(null)
+                scope.launch { commandQueue.loadEvents() }
             }
 
             MedtrumPumpState.DAILY_MAX_SUSPENDED  -> {
@@ -765,7 +758,7 @@ class MedtrumService : DaggerService(), MedtrumBleCallback {
                     soundRes = app.aaps.core.ui.R.raw.alarm
                 )
                 // Pump will report proper TBR for this from loadEvents()
-                commandQueue.loadEvents(null)
+                scope.launch { commandQueue.loadEvents() }
             }
 
             MedtrumPumpState.OCCLUSION,
@@ -785,12 +778,11 @@ class MedtrumService : DaggerService(), MedtrumBleCallback {
                     soundRes = app.aaps.core.ui.R.raw.alarm
                 )
                 // Get pump status, use readStatus here as for loadEvents() we cannot be sure callback is executed
-                commandQueue.readStatus(rh.gs(app.aaps.core.ui.R.string.device_changed), object : Callback() {
-                    override fun run() {
-                        // Make sure a 0 temp is set
-                        medtrumPump.setFakeTBRIfNotSet()
-                    }
-                })
+                scope.launch {
+                    commandQueue.readStatus(rh.gs(app.aaps.core.ui.R.string.device_changed))
+                    // Make sure a 0 temp is set
+                    medtrumPump.setFakeTBRIfNotSet()
+                }
             }
         }
     }

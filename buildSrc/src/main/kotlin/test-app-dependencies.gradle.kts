@@ -17,11 +17,9 @@ dependencies {
     testImplementationFromCatalog("org-skyscreamer-jsonassert")
     testImplementationFromCatalog("kotlinx-coroutines-test")
 
-    androidTestImplementationFromCatalog("androidx-espresso-core")
     androidTestImplementationFromCatalog("androidx-test-ext")
     androidTestImplementationFromCatalog("androidx-test-rules")
     androidTestImplementationFromCatalog("com-google-truth")
-    androidTestImplementationFromCatalog("androidx-uiautomator")
 }
 
 tasks.withType<Test> {
@@ -30,7 +28,7 @@ tasks.withType<Test> {
         // set options for log level LIFECYCLE
         events = setOf(
             TestLogEvent.FAILED,
-            TestLogEvent.STARTED,
+            //TestLogEvent.STARTED,
             TestLogEvent.SKIPPED,
             TestLogEvent.STANDARD_OUT
         )

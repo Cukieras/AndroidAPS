@@ -3,11 +3,12 @@ package app.aaps.plugins.configuration.setupwizard
 import app.aaps.core.data.plugin.PluginType
 import app.aaps.core.interfaces.configuration.Config
 import app.aaps.core.interfaces.constraints.Objectives
+import app.aaps.core.interfaces.di.ApplicationScope
 import app.aaps.core.interfaces.maintenance.FileListProvider
 import app.aaps.core.interfaces.plugin.ActivePlugin
 import app.aaps.core.interfaces.plugin.PermissionGroup
-import app.aaps.core.interfaces.profile.LocalProfileManager
 import app.aaps.core.interfaces.profile.ProfileFunction
+import app.aaps.core.interfaces.profile.ProfileRepository
 import app.aaps.core.interfaces.pump.Medtrum
 import app.aaps.core.interfaces.pump.OmnipodDash
 import app.aaps.core.interfaces.pump.OmnipodEros
@@ -20,8 +21,9 @@ import app.aaps.core.interfaces.rx.events.EventPumpStatusChanged
 import app.aaps.core.interfaces.rx.events.EventSWRLStatus
 import app.aaps.core.interfaces.rx.events.EventSWSyncStatus
 import app.aaps.core.interfaces.rx.events.EventSWUpdate
-import app.aaps.core.interfaces.ui.UiInteraction
+import app.aaps.core.interfaces.sync.NsClient
 import app.aaps.core.interfaces.utils.HardLimits
+import app.aaps.core.keys.BooleanKey
 import app.aaps.core.keys.BooleanNonKey
 import app.aaps.core.keys.DoubleKey
 import app.aaps.core.keys.IntKey
@@ -39,11 +41,14 @@ import app.aaps.plugins.configuration.setupwizard.elements.SWEditNumberWithUnits
 import app.aaps.plugins.configuration.setupwizard.elements.SWEditString
 import app.aaps.plugins.configuration.setupwizard.elements.SWHtmlLink
 import app.aaps.plugins.configuration.setupwizard.elements.SWInfoText
+import app.aaps.plugins.configuration.setupwizard.elements.SWPairingStatus
 import app.aaps.plugins.configuration.setupwizard.elements.SWPermissions
 import app.aaps.plugins.configuration.setupwizard.elements.SWPlugin
 import app.aaps.plugins.configuration.setupwizard.elements.SWRadioButton
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.kotlin.plusAssign
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 import javax.inject.Provider
@@ -51,18 +56,19 @@ import javax.inject.Singleton
 
 @Singleton
 class SWDefinition @Inject constructor(
+    @ApplicationScope private val appScope: CoroutineScope,
     private val rxBus: RxBus,
     private val rh: ResourceHelper,
     private val preferences: Preferences,
     private val profileFunction: ProfileFunction,
     private val activePlugin: ActivePlugin,
-    private val localProfileManager: LocalProfileManager,
+    private val profileRepository: ProfileRepository,
     private val commandQueue: CommandQueue,
     private val fileListProvider: FileListProvider,
     private val cryptoUtil: CryptoUtil,
     private val config: Config,
     private val hardLimits: HardLimits,
-    private val uiInteraction: UiInteraction,
+    private val nsClient: NsClient,
     private val aapsSchedulers: AapsSchedulers,
     private val swScreenProvider: Provider<SWScreen>,
     private val swEventListenerProvider: Provider<SWEventListener>,
@@ -75,6 +81,7 @@ class SWDefinition @Inject constructor(
     private val swEditStringProvider: Provider<SWEditString>,
     private val swHtmlLinkProvider: Provider<SWHtmlLink>,
     private val swInfoTextProvider: Provider<SWInfoText>,
+    private val swPairingStatusProvider: Provider<SWPairingStatus>,
     private val swPermissionsProvider: Provider<SWPermissions>,
     private val swPluginProvider: Provider<SWPlugin>,
     private val swRadioButtonProvider: Provider<SWRadioButton>
@@ -87,6 +94,9 @@ class SWDefinition @Inject constructor(
     var onManageInsulin: (() -> Unit)? = null
     var onManageProfile: (() -> Unit)? = null
     var onProfileSwitch: (() -> Unit)? = null
+    var onOpenAuthorizedClients: (() -> Unit)? = null
+    var onPairWithMaster: (() -> Unit)? = null
+    var onOpenNsReceiveSettings: (() -> Unit)? = null
     var onRunObjectives: (() -> Unit)? = null
     var onRequestDirectoryAccess: (() -> Unit)? = null
     var onRequestPermission: ((PermissionGroup) -> Unit)? = null
@@ -193,8 +203,47 @@ class SWDefinition @Inject constructor(
             .add(swBreakProvider.get())
             .add(swInfoTextProvider.get().label(R.string.syncinfotext))
             .add(swBreakProvider.get())
-            .add(swEventListenerProvider.get().with(EventSWSyncStatus::class.java).label(R.string.status).initialStatus(activePlugin.activeNsClient?.status ?: ""))
-            .validator { activePlugin.activeNsClient?.connected == true && activePlugin.activeNsClient?.hasWritePermission == true }
+            .add(swEventListenerProvider.get().with(EventSWSyncStatus::class.java).label(R.string.status_label).initialStatus(nsClient.status))
+            .validator { nsClient.connected && nsClient.hasWritePermission }
+
+    // Master side: explain the paired client-control channel, open the pairing (Authorized clients) screen,
+    // and offer the old "accept data from NS" settings (now off by default).
+    private val screenClientControl
+        get() = swScreenProvider.get().with(R.string.setupwizard_client_control_title)
+            .skippable(true)
+            .add(swInfoTextProvider.get().label(R.string.setupwizard_client_control_info))
+            .add(swPairingStatusProvider.get())
+            .add(swBreakProvider.get())
+            .add(
+                swButtonProvider.get()
+                    .text(app.aaps.core.ui.R.string.authorized_clients_manage_label)
+                    .visibility { preferences.get(BooleanKey.NsClient3UseWs) }
+                    .action { onOpenAuthorizedClients?.invoke() }
+            )
+            .add(swInfoTextProvider.get().label(R.string.setupwizard_pairing_ws_warning).visibility { !preferences.get(BooleanKey.NsClient3UseWs) })
+            .add(swBreakProvider.get())
+            .add(swInfoTextProvider.get().label(R.string.setupwizard_ns_receive_info))
+            .add(
+                swButtonProvider.get()
+                    .text(R.string.setupwizard_open_ns_receive_settings)
+                    .action { onOpenNsReceiveSettings?.invoke() }
+            )
+
+    // Client side: explain pairing with a master and open the "Pair with master" (PIN entry) screen.
+    private val screenPairWithMaster
+        get() = swScreenProvider.get().with(app.aaps.core.ui.R.string.pair_with_master_manage_label)
+            .skippable(true)
+            .add(swInfoTextProvider.get().label(R.string.setupwizard_pair_with_master_info))
+            .add(swBreakProvider.get())
+            .add(
+                swButtonProvider.get()
+                    .text(app.aaps.core.ui.R.string.pair_with_master_manage_label)
+                    .visibility { preferences.get(BooleanKey.NsClient3UseWs) }
+                    .action { onPairWithMaster?.invoke() }
+            )
+            .add(swBreakProvider.get())
+            .add(swPairingStatusProvider.get())
+            .add(swInfoTextProvider.get().label(R.string.setupwizard_pairing_ws_warning).visibility { !preferences.get(BooleanKey.NsClient3UseWs) })
 
     private val screenPatientName
         get() = swScreenProvider.get().with(app.aaps.core.keys.R.string.pref_title_patient_name)
@@ -259,7 +308,7 @@ class SWDefinition @Inject constructor(
             .add(swInfoTextProvider.get().label(R.string.setupwizard_profile_info))
             .add(swBreakProvider.get())
             .add(swButtonProvider.get().text(app.aaps.core.ui.R.string.profile).action { onManageProfile?.invoke() })
-            .validator { localProfileManager.numOfProfiles > 0 && localProfileManager.isValid() }
+            .validator { profileRepository.profiles.value.let { it.isNotEmpty() && it.all { p -> profileRepository.validateStructured(p).isEmpty() } } }
 
     private val screenProfileSwitch
         get() = swScreenProvider.get().with(app.aaps.core.ui.R.string.careportal_profileswitch)
@@ -290,7 +339,7 @@ class SWDefinition @Inject constructor(
             .add(
                 swButtonProvider.get()
                     .text(R.string.readstatus)
-                    .action { commandQueue.readStatus(rh.gs(app.aaps.core.ui.R.string.clicked_connect_to_pump), null) }
+                    .action { appScope.launch { commandQueue.readStatus(rh.gs(app.aaps.core.ui.R.string.clicked_connect_to_pump)) } }
                     .visibility {
                         // Hide for Omnipod and Medtrum, because as we don't require a Pod/Patch to be paired in the setup wizard,
                         // Getting the status might not be possible
@@ -350,6 +399,7 @@ class SWDefinition @Inject constructor(
             .add(displaySettings)
 
             .add(screenNsClient)
+            .add(screenClientControl)
             .add(screenPatientName)
             .add(screenAge)
             .add(screenInsulin)
@@ -392,6 +442,7 @@ class SWDefinition @Inject constructor(
             .add(displaySettings)
 
             .add(screenNsClient)
+            .add(screenPairWithMaster)
             //.add(screenBgSource)
             .add(screenPatientName)
 }

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
@@ -37,6 +38,8 @@ import app.aaps.core.interfaces.overview.graph.AapsClientLevel
 import app.aaps.core.interfaces.overview.graph.AapsClientStatusData
 import app.aaps.core.interfaces.overview.graph.AapsClientStatusItem
 import app.aaps.core.ui.R
+import app.aaps.core.ui.compose.ExcludeFromJacocoGeneratedReport
+import app.aaps.core.ui.compose.rememberBringIntoViewOnExpand
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -49,11 +52,13 @@ fun AapsClientStatusCard(
     if (items.isEmpty()) return
 
     var expanded by rememberSaveable { mutableStateOf(false) }
+    val expandRequester = rememberBringIntoViewOnExpand(expanded)
 
     ElevatedCard(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 4.dp),
+            .padding(horizontal = 4.dp)
+            .bringIntoViewRequester(expandRequester),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp),
         colors = CardDefaults.elevatedCardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
@@ -109,6 +114,7 @@ fun AapsClientStatusCard(
 }
 
 @OptIn(ExperimentalLayoutApi::class)
+@ExcludeFromJacocoGeneratedReport
 @Preview(showBackground = true)
 @Composable
 private fun AapsClientStatusCardCollapsedPreview() {
@@ -143,6 +149,7 @@ private fun AapsClientStatusCardCollapsedPreview() {
 }
 
 @OptIn(ExperimentalLayoutApi::class)
+@ExcludeFromJacocoGeneratedReport
 @Preview(showBackground = true)
 @Composable
 private fun AapsClientStatusCardMixedLevelsPreview() {

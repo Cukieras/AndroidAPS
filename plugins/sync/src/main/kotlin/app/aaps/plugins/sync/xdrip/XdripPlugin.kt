@@ -30,6 +30,7 @@ import app.aaps.core.interfaces.receivers.Intents
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.rx.AapsSchedulers
 import app.aaps.core.interfaces.rx.bus.RxBus
+import app.aaps.core.interfaces.rx.collectResilient
 import app.aaps.core.interfaces.rx.events.EventAppExit
 import app.aaps.core.interfaces.rx.events.EventAppInitialized
 import app.aaps.core.interfaces.rx.events.EventAutosensCalculationFinished
@@ -50,9 +51,9 @@ import app.aaps.core.objects.profile.ProfileSealed
 import app.aaps.core.ui.compose.icons.IcXDrip
 import app.aaps.core.ui.compose.preference.PreferenceSubScreenDef
 import app.aaps.plugins.sync.R
-import app.aaps.plugins.sync.nsclient.extensions.toJson
 import app.aaps.plugins.sync.xdrip.compose.XdripComposeContent
 import app.aaps.plugins.sync.xdrip.compose.XdripMvvmRepository
+import app.aaps.plugins.sync.xdrip.extensions.toJson
 import app.aaps.plugins.sync.xdrip.extensions.toXdripJson
 import app.aaps.plugins.sync.xdrip.keys.XdripIntentKey
 import app.aaps.plugins.sync.xdrip.keys.XdripLongKey
@@ -64,8 +65,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
@@ -128,7 +127,7 @@ class XdripPlugin @Inject constructor(
     override val connected: Boolean = true
     override val status: String = ""
 
-    override fun onStart() {
+    override suspend fun onStart() {
         super.onStart()
         handler = Handler(HandlerThread(this::class.simpleName + "Handler").also { it.start() }.looper)
         disposable += rxBus
@@ -138,10 +137,10 @@ class XdripPlugin @Inject constructor(
         persistenceLayer.observeAnyChange()
             // HR/SC writes come from the watch; this plugin doesn't broadcast them — skip to avoid reconnect-flush storm.
             .filter { types -> types.any { it != HR::class && it != SC::class } }
-            .onEach { types ->
+            .collectResilient(scope, aapsLogger, LTag.XDRIP) { types ->
                 sendStatusLine()
                 delayAndScheduleExecution("DB_CHANGED(${types.joinToString { it.simpleName ?: "?" }})")
-            }.launchIn(scope)
+            }
         disposable += rxBus.toObservable(EventAutosensCalculationFinished::class.java)
             .observeOn(aapsSchedulers.io)
             .subscribe({ sendStatusLine() }, fabricPrivacy::logException)
@@ -151,7 +150,7 @@ class XdripPlugin @Inject constructor(
         eventWorker = Executors.newSingleThreadScheduledExecutor()
     }
 
-    override fun onStop() {
+    override suspend fun onStop() {
         super.onStop()
         handler?.looper?.quitSafely()
         handler?.removeCallbacksAndMessages(null)
@@ -219,10 +218,10 @@ class XdripPlugin @Inject constructor(
     private fun buildStatusLine(profile: Profile): String {
         val status = StringBuilder()
         if (!runBlocking { loop.runningMode() }.isLoopRunning() && config.APS)
-            status.append(rh.gs(R.string.disabled_loop)).append("\n")
+            status.append(rh.gs(app.aaps.core.ui.R.string.disabled_loop)).append("\n")
 
         //Temp basal
-        processedTbrEbData.getTempBasalIncludingConvertedExtended(System.currentTimeMillis())?.let {
+        runBlocking { processedTbrEbData.getTempBasalIncludingConvertedExtended(System.currentTimeMillis()) }?.let {
             status.append(it.toStringShort(rh)).append(" ")
         }
         //IOB

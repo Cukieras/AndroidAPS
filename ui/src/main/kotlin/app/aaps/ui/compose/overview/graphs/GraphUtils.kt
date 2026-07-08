@@ -1,11 +1,11 @@
 package app.aaps.ui.compose.overview.graphs
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.GenericShape
-import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
@@ -34,7 +34,7 @@ import kotlin.time.Instant
  * **Graph Alignment (3 pillars):**
  * All graphs MUST have identical x-axis configuration for pixel-based scroll/zoom sync:
  * 1. `rangeProvider = CartesianLayerRangeProvider.fixed(minX = 0.0, maxX = maxX)` — same X range
- * 2. `getXStep = { 1.0 }` — same xStep (1 minute per unit)
+ * 2. `getXStep = { _, _, _ -> 1.0 }` — same xStep (1 minute per unit)
  * 3. Normalizer line ([createNormalizerLine] + [NORMALIZER_X]/[NORMALIZER_Y] dummy series) —
  *    ensures identical maxPointSize across all charts → same xSpacing and unscalable padding
  *
@@ -125,6 +125,21 @@ const val MIN_GRAPH_ZOOM_MINUTES = 30.0
 const val INTERACTION_GRACE_MS = 60_000L
 
 /**
+ * Fraction of the graph height occupied by the basal overlay.
+ *
+ * The basal layer lives on its own (end) axis; the rest of the height is left for the primary data.
+ * Two coupled formulas derive from this single value and MUST stay in sync — keep them expressed in
+ * terms of this constant rather than hard-coded numbers:
+ * - Basal axis max  = `maxBasal / BASAL_HEIGHT_FRACTION` → maxBasal plots at this fraction of the height.
+ * - Primary axis max = `dataMax / (1 - BASAL_HEIGHT_FRACTION)` → primary (IOB) data fills the remaining
+ *   height, reserving the basal fraction at the edge. Used by SecondaryGraphCompose (basal at top);
+ *   BgGraphCompose overlays basal at the bottom and has no primary reservation.
+ *
+ * e.g. 0.5 → basal occupies half the height, the primary data the other half.
+ */
+const val BASAL_HEIGHT_FRACTION = 0.5
+
+/**
  * Filters data points to only include those within the valid x-axis range.
  *
  * Use this when you have data that might extend beyond the visible time range
@@ -175,7 +190,7 @@ fun createNormalizerLine(): LineCartesianLayer.Line =
     )
 
 /**
- * Y data for the normalizer dummy series. Always add this to every chart's lineSeries block.
+ * Y data for the normalizer dummy series. Always add this to every chart's lineModel block.
  * Two points at y=0, invisible, just to occupy a series slot for the normalizer line.
  */
 val NORMALIZER_Y = listOf(0.0, 0.0)

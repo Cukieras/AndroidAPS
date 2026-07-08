@@ -27,6 +27,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -76,6 +79,7 @@ class QuickWizardManagementViewModel @Inject constructor(
     init {
         loadData()
         observeQuickWizardChanges()
+        observeQuickWizardPrefChanges()
     }
 
     override fun onCleared() {
@@ -93,25 +97,21 @@ class QuickWizardManagementViewModel @Inject constructor(
                 val showSuperBolus = preferences.get(BooleanKey.OverviewUseSuperBolus)
                 val showWear = preferences.get(BooleanKey.WearControl)
 
-                // Select first entry if exists
-                val firstEntry = entries.firstOrNull()
-
-                _uiState.update {
-                    it.copy(
+                _uiState.update { current ->
+                    // Preserve the current selection if valid (e.g. after a save on a non-first card);
+                    // fall back to 0 on initial load (current.selectedIndex == -1) or if the list shrank.
+                    val targetIndex = if (current.selectedIndex in entries.indices) current.selectedIndex else 0
+                    val targetEntry = entries.getOrNull(targetIndex)
+                    current.copy(
                         entries = entries,
-                        selectedIndex = if (entries.isNotEmpty()) 0 else -1,
-                        selectedGuid = firstEntry?.guid() ?: "",
-                        currentCardIndex = 0,
+                        selectedIndex = if (entries.isNotEmpty()) targetIndex else -1,
+                        selectedGuid = targetEntry?.guid() ?: "",
+                        currentCardIndex = if (current.currentCardIndex in entries.indices) current.currentCardIndex else 0,
                         showSuperBolusOption = showSuperBolus,
                         showWearOptions = showWear,
                         isLoading = false
                     ).let { state ->
-                        // Load first entry into editor if exists
-                        if (firstEntry != null) {
-                            loadEntryIntoEditor(state, firstEntry)
-                        } else {
-                            state
-                        }
+                        if (targetEntry != null) loadEntryIntoEditor(state, targetEntry) else state
                     }
                 }
             } catch (e: Exception) {
@@ -134,6 +134,19 @@ class QuickWizardManagementViewModel @Inject constructor(
                        }, { throwable ->
                            aapsLogger.error(LTag.UI, "Error observing QuickWizard changes", throwable)
                        })
+    }
+
+    /**
+     * Observe QuickWizard changes that don't originate from this screen — edits on another screen or
+     * a value synced from the main phone. [QuickWizard.changes] bumps after the domain cache reloads,
+     * so [loadData] reads fresh entries (no race with the cache update). The local-edit path is still
+     * covered by [EventQuickWizardChange] above.
+     */
+    private fun observeQuickWizardPrefChanges() {
+        quickWizard.changes
+            .drop(1) // skip initial value; loadData() in init already read the current entries
+            .onEach { loadData() }
+            .launchIn(viewModelScope)
     }
 
     /**
@@ -258,7 +271,14 @@ class QuickWizardManagementViewModel @Inject constructor(
                 quickWizard.addOrUpdate(entry)
                 rxBus.send(EventQuickWizardChange())
 
-                _uiState.update { it.copy(hasUnsavedChanges = false) }
+                // Synchronously refresh the entries list so the carousel shows the saved mode
+                // immediately, without waiting for the async RxBus → loadData() path.
+                val updatedEntries = quickWizard.list()
+                _uiState.update { state ->
+                    val savedEntry = updatedEntries.getOrNull(index)
+                    val base = state.copy(entries = updatedEntries, hasUnsavedChanges = false)
+                    if (savedEntry != null) loadEntryIntoEditor(base, savedEntry) else base
+                }
             } catch (e: Exception) {
                 aapsLogger.error(LTag.UI, "Failed to save QuickWizard entry", e)
                 rxBus.send(EventShowSnackbar(e.message ?: "Failed to save entry", EventShowSnackbar.Type.Error))

@@ -41,6 +41,8 @@ class EquilBLE @Inject constructor(
     private var equilManager: EquilManager? = null
     var isConnected = false
     var connecting = false
+    private var connectInitiated = false
+    private var connectRunnable: Runnable? = null
     var macAddress: String? = null
     private var bleHandler = Handler(HandlerThread(this::class.simpleName + "Handler").also { it.start() }.looper)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -141,6 +143,11 @@ class EquilBLE @Inject constructor(
 
     fun disconnect() {
         isConnected = false
+        connecting = false
+        connectInitiated = false
+        // Cancel any pending delayed connect so a stale runnable can't re-open a GATT after teardown.
+        connectRunnable?.let { handler.removeCallbacks(it) }
+        connectRunnable = null
         startTrue = false
         autoScan = false
         equilManager?.equilState?.bluetoothConnectionState = BluetoothConnectionState.DISCONNECTED
@@ -153,9 +160,11 @@ class EquilBLE @Inject constructor(
     }
 
     fun closeBleAuto() {
-        handler.postDelayed({
-            disconnect()
-        }, EquilConst.EQUIL_BLE_NEXT_CMD)
+        // Tear down immediately. The AAPS command queue owns the connection lifecycle: after the last
+        // command it holds the link for waitForDisconnectionInSeconds() (5 s) for reuse and only then
+        // calls Pump.disconnect() -> here. No extra driver-side linger is needed, and an immediate
+        // teardown avoids the mid-command race that a deferred, cancellable timer would introduce.
+        disconnect()
     }
 
     var autoScan = true
@@ -167,10 +176,17 @@ class EquilBLE @Inject constructor(
     }
 
     private fun connectEquil(address: String) {
-        handler.postDelayed({
+        // Guard against the scan emitting the same device multiple times (and other re-entrant
+        // calls): only one connect attempt per session, reset on disconnect(). Prevents stacking
+        // overlapping GATT clients. See also the close-before-connect guard in EquilBleTransportImpl.
+        if (connectInitiated) return
+        connectInitiated = true
+        val runnable = Runnable {
             aapsLogger.debug(LTag.PUMPCOMM, "connectEquil======")
             bleTransport.gatt.connect(address)
-        }, 500)
+        }
+        connectRunnable = runnable
+        handler.postDelayed(runnable, 500)
     }
 
     private var baseCmd: BaseCmd? = null
@@ -187,10 +203,18 @@ class EquilBLE @Inject constructor(
         if (isConnected && baseCmd.isPairStep()) {
             ready()
         } else if (isConnected) {
-            preCmd?.let { preCmd ->
-                baseCmd.runCode = preCmd.runCode
-                baseCmd.runPwd = preCmd.runPwd
+            val prevCmd = preCmd
+            if (prevCmd != null) {
+                baseCmd.runCode = prevCmd.runCode
+                baseCmd.runPwd = prevCmd.runPwd
                 nextCmd2()
+            } else {
+                // The GATT link was opened by the queue's connect() phase, which leaves no prior
+                // command context (baseCmd/preCmd are null, so the connect-time ready() was a no-op).
+                // Send this command as the first one on the open connection instead of silently
+                // dropping it - otherwise the pump receives nothing and idle-disconnects (status 19),
+                // surfacing as a bolus/command timeout. See issue #4910.
+                ready()
             }
         } else {
             findEquil(mac)
@@ -260,10 +284,12 @@ class EquilBLE @Inject constructor(
         aapsLogger.debug(LTag.PUMPBTCOMM, "startScan====$startTrue====$macAddress===")
         if (macAddress.isNullOrEmpty()) return
         if (startTrue) return
+        startTrue = true
+        connecting = true
+        equilManager?.equilState?.bluetoothConnectionState = BluetoothConnectionState.CONNECTING
 
         bleTransport.scanAddress = macAddress
         updateCmdStatus(ResolvedResult.NOT_FOUNT)
-        connecting = true
 
         scanJob = scope.launch {
             bleTransport.scanner.scannedDevices.collect { device ->
@@ -288,8 +314,8 @@ class EquilBLE @Inject constructor(
     }
 
     fun connect(from: String) {
-        aapsLogger.debug(LTag.PUMPCOMM, "connect====startTrue=$startTrue====isConnected=$isConnected from $from")
-        if (startTrue || isConnected) {
+        aapsLogger.debug(LTag.PUMPCOMM, "connect====connecting=$connecting====isConnected=$isConnected from $from")
+        if (connecting || isConnected) {
             return
         }
         autoScan = true

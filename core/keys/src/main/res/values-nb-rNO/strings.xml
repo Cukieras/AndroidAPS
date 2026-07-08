@@ -31,6 +31,8 @@
     <string name="pref_title_alert_carbs_required">Varsle ved behov for karbo</string>
     <string name="pref_title_alert_urgent_as_android_notification">Vis akutte alarmer som Android-varsler</string>
     <string name="pref_title_alert_increase_volume">Øk varselvolumet gradvis</string>
+    <string name="pref_title_alert_override_dnd">Overstyr ikke forstyrr-modus</string>
+    <string name="pref_summary_alert_override_dnd">Når aktivert spilles AAPS-alarmer av selv i lydløsmodus og ikke forstyrr (alarmkanal). Når deaktivert følger alarmer lydløsmodus/ikke forstyrr (varslingskanal).</string>
     <!-- BG Source preferences -->
     <string name="pref_title_bg_source_upload_to_ns">Last opp BS-data til NS</string>
     <string name="pref_title_bg_source_create_sensor_change">Logg sensorskifte</string>
@@ -123,6 +125,8 @@
     <string name="pref_title_ns_slow_sync">Bruk langsom synkronisering</string>
     <string name="pref_title_ns_use_ws">Bruk websockets</string>
     <string name="pref_summary_ns_use_ws">Bruk websockets for sanntidskommunikasjon med Nightscout.</string>
+    <string name="pref_title_ns_allow_client_control">Tillat klientstyring</string>
+    <string name="pref_summary_ns_allow_client_control">La tilkoblede klientenheter sende signerte kommandoer (f.eks. starte/stoppe scener) via Nightscout.</string>
     <!-- OpenHumans preferences -->
     <string name="pref_title_openhumans_wifi_only">Kun WiFi</string>
     <string name="pref_title_openhumans_charging_only">Kun under lading</string>
@@ -145,9 +149,6 @@
     <string name="pref_summary_wear_notify_on_smb">Send varsler til klokken når SMB leveres.</string>
     <string name="pref_title_wear_broadcast_data">Send data til klokken</string>
     <string name="pref_summary_wear_broadcast_data">Send AAPS-data til tredjeparts klokkeapper via intent.</string>
-    <!-- Wizard preferences -->
-    <string name="pref_title_wizard_calculation_visible">Vis kalkulatorberegning</string>
-    <string name="pref_title_wizard_correction_percent">Bruk korreksjonsprosent</string>
     <!-- Site rotation preferences -->
     <string name="pref_title_site_rotation_manage_pump">Administrer pumpe-stedsrotasjon</string>
     <string name="pref_title_site_rotation_manage_cgm">Administrer sensor-stedsrotasjon</string>
@@ -221,11 +222,17 @@
     <string name="pref_title_sms_remote_bolus_distance">Minimum avstand mellom fjernboluser</string>
     <!-- IntKey: BG Source preferences -->
     <string name="pref_title_random_bg_interval">Tilfeldig BS-intervall</string>
+    <string name="pref_title_random_bg_randomize">Tilfeldiggjør glukosedata</string>
+    <string name="pref_summary_random_bg_randomize">Legg til støy, varier tidsstempler, tilfeldiggjør trendpiler og generer sporadiske tilfeldige karboregistreringer. Deaktiver for en ren, deterministisk sinuskurve der trendpilen beregnes ut fra sinuskurvens helning.</string>
     <!-- IntKey: NS Client preferences -->
     <string name="pref_title_alarm_stale_data">Terskel for alarm om utdaterte data</string>
     <string name="pref_title_urgent_alarm_stale_data">Terskel for akutt alarm om utdaterte data</string>
     <!-- IntKey: Site rotation preferences -->
     <string name="pref_title_site_rotation_profile">Brukerprofil for stedsrotasjon</string>
+    <!-- Body-type choices for the site-rotation user profile (man / woman / child body silhouette) -->
+    <string name="site_rotation_profile_man">Mann</string>
+    <string name="site_rotation_profile_woman">Kvinne</string>
+    <string name="site_rotation_profile_child">Barn</string>
     <!-- StringKey: General preferences -->
     <string name="pref_title_units">Enheter</string>
     <string name="units_mgdl">mg/dL</string>
@@ -254,6 +261,7 @@
     <string name="units_format_mgdl">%1$s mg/dL</string>
     <string name="units_format_double">%1$.1f</string>
     <string name="units_format_double_2">%1$.2f</string>
+    <string name="units_format_double_3">%1$.3f</string>
     <!-- Formatted unit strings with value and range -->
     <string name="units_format_grams_range">%1$d g (%2$d - %3$d)</string>
     <string name="units_format_min_range">%1$d min (%2$d - %3$d)</string>
@@ -268,6 +276,7 @@
     <string name="units_format_mgdl_range">%1$s mg/dL (%2$s - %3$s)</string>
     <string name="units_format_double_range">%1$.1f (%2$.1f - %3$.1f)</string>
     <string name="units_format_double_2_range">%1$.2f (%2$.2f - %3$.2f)</string>
+    <string name="units_format_double_3_range">%1$.3f (%2$.3f - %3$.3f)</string>
     <string name="pref_title_language">Språk</string>
     <string name="lang_default">Systemstandard</string>
     <string name="lang_en">Engelsk</string>

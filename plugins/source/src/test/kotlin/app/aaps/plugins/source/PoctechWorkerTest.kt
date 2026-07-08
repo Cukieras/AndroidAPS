@@ -3,6 +3,7 @@ package app.aaps.plugins.source
 import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import app.aaps.core.data.configuration.Constants
 import app.aaps.core.data.model.GV
 import app.aaps.core.data.model.SourceSensor
 import app.aaps.core.data.model.TrendArrow
@@ -30,19 +31,9 @@ class PoctechWorkerTest : TestBaseWithProfile() {
     @Mock lateinit var persistenceLayer: PersistenceLayer
     @Mock lateinit var workerParameters: WorkerParameters
 
-    init {
-        addInjector { injector ->
-            if (injector is PoctechPlugin.PoctechWorker) {
-                injector.aapsLogger = aapsLogger
-                injector.poctechPlugin = poctechPlugin
-                injector.persistenceLayer = persistenceLayer
-            }
-        }
-    }
-
     @BeforeEach
     fun setupMock() {
-        worker = PoctechPlugin.PoctechWorker(context, workerParameters)
+        worker = PoctechPlugin.PoctechWorker(context, workerParameters, aapsLogger, fabricPrivacy, poctechPlugin, persistenceLayer)
     }
 
     @Test
@@ -85,7 +76,7 @@ class PoctechWorkerTest : TestBaseWithProfile() {
             Assertions.assertEquals(ListenableWorker.Result.success(), result)
             val expectedGv = GV(
                 timestamp = timestamp,
-                value = 180.0,
+                value = 10.0 * Constants.MMOLL_TO_MGDL, // mmol/l → mg/dl conversion
                 raw = null,
                 noise = null,
                 trendArrow = TrendArrow.FORTY_FIVE_DOWN,

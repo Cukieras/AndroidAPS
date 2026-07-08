@@ -7,11 +7,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -19,7 +17,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.aaps.core.data.model.ActiveSceneState
@@ -34,6 +31,7 @@ import app.aaps.core.ui.compose.preference.PreferenceSubScreenDef
 import app.aaps.ui.compose.main.TempTargetChipState
 import app.aaps.ui.compose.manageSheet.ManageViewModel
 import app.aaps.ui.compose.overview.aapsClient.AapsClientStatusCard
+import app.aaps.ui.compose.overview.chips.ChipsViewModel
 import app.aaps.ui.compose.overview.graphs.GraphViewModel
 import app.aaps.ui.compose.overview.graphs.GraphsSection
 import app.aaps.ui.compose.overview.statusLights.StatusViewModel
@@ -59,31 +57,35 @@ fun OverviewScreenTablet(
     tempTargetSceneManaged: Boolean = false,
     runningMode: RM.Mode,
     runningModeText: String,
+    runningModeRemaining: String,
     runningModeProgress: Float,
     runningModeSceneManaged: Boolean = false,
     tbrState: TbrState,
     smbEnabled: Boolean,
     isSimpleMode: Boolean,
-    calcProgress: Int,
     graphViewModel: GraphViewModel,
+    chipsViewModel: ChipsViewModel,
     manageViewModel: ManageViewModel,
     statusViewModel: StatusViewModel,
     statusLightsDef: PreferenceSubScreenDef,
     onNavigate: (NavigationRequest) -> Unit,
     onTbrChipClick: () -> Unit,
+    onIobChipClick: () -> Unit,
     paddingValues: PaddingValues,
     activeSceneState: ActiveSceneState? = null,
     sceneExpired: Boolean = false,
     onEndScene: () -> Unit = {},
     onDismissScene: () -> Unit = {},
+    endSceneEnabled: Boolean = true,
+    commandsAllowed: Boolean = true,
     formatDuration: (Long) -> String = { ms -> "${(ms / 60000L).toInt()}m" },
     modifier: Modifier = Modifier
 ) {
     val config = LocalConfig.current
     val bgInfoState by graphViewModel.bgInfoState.collectAsStateWithLifecycle()
-    val sensitivityUiState by graphViewModel.sensitivityUiState.collectAsStateWithLifecycle()
-    val iobUiState by graphViewModel.iobUiState.collectAsStateWithLifecycle()
-    val cobUiState by graphViewModel.cobUiState.collectAsStateWithLifecycle()
+    val sensitivityUiState by chipsViewModel.sensitivityUiState.collectAsStateWithLifecycle()
+    val iobUiState by chipsViewModel.iobUiState.collectAsStateWithLifecycle()
+    val cobUiState by chipsViewModel.cobUiState.collectAsStateWithLifecycle()
     val statusState by statusViewModel.uiState.collectAsStateWithLifecycle()
 
     var statusExpanded by rememberSaveable { mutableStateOf(true) }
@@ -93,19 +95,12 @@ fun OverviewScreenTablet(
             .fillMaxSize()
             .padding(paddingValues)
     ) {
-        if (calcProgress < 100) {
-            LinearProgressIndicator(
-                progress = { calcProgress / 100f },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(4.dp),
-            )
-        }
         ActiveSceneBanner(
             activeState = activeSceneState,
             expired = sceneExpired,
             onEndClick = onEndScene,
             onDismiss = onDismissScene,
+            endEnabled = endSceneEnabled,
             formatDuration = formatDuration
         )
 
@@ -135,7 +130,6 @@ fun OverviewScreenTablet(
                             timeAgoText = bgInfoState.timeAgoText,
                             showTimeAgo = false
                         )
-                        SensitivityChipBlock(state = sensitivityUiState)
                     }
 
                     Column(
@@ -151,10 +145,10 @@ fun OverviewScreenTablet(
                         OverviewChipsColumn(
                             runningMode = runningMode,
                             runningModeText = runningModeText,
+                            runningModeRemaining = runningModeRemaining,
                             runningModeProgress = runningModeProgress,
                             runningModeSceneManaged = runningModeSceneManaged,
                             smbEnabled = smbEnabled,
-                            isSimpleMode = isSimpleMode,
                             profileName = profileName,
                             isProfileModified = isProfileModified,
                             profileProgress = profileProgress,
@@ -167,8 +161,11 @@ fun OverviewScreenTablet(
                             tbrState = tbrState,
                             iobUiState = iobUiState,
                             cobUiState = cobUiState,
+                            sensitivityUiState = sensitivityUiState,
                             onNavigate = onNavigate,
-                            onTbrChipClick = onTbrChipClick
+                            onTbrChipClick = onTbrChipClick,
+                            onIobChipClick = onIobChipClick,
+                            commandsAllowed = commandsAllowed
                         )
                     }
                 }
@@ -180,6 +177,7 @@ fun OverviewScreenTablet(
                     batteryStatus = statusState.batteryStatus,
                     showFill = statusState.showFill,
                     showPumpBatteryChange = statusState.showPumpBatteryChange,
+                    commandsAllowed = commandsAllowed,
                     onNavigate = onNavigate,
                     statusLightsDef = statusLightsDef,
                     onCopyFromNightscout = { manageViewModel.copyStatusLightsFromNightscout() },

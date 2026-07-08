@@ -16,7 +16,7 @@
     <string name="description_ama">Starea algoritmului în 2017</string>
     <string name="description_smb">Cel mai recent algoritm destinat utilizatorilor avansați</string>
     <string name="description_smb_dynamic_isf">Cel mai recent algoritm pentru utilizatorii avansați cu ISF dinamic/automat</string>
-    <string name="description_auto_isf">Cel mai recent algoritm pentru utilizatori avansați cu extensii AutoISF</string>
+    <string name="description_auto_isf">Algoritm experimental pentru utilizatorii avansați cu extensii AutoISF</string>
     <string name="openapsma_last_run_label">Ultima execuție</string>
     <string name="openapsma_input_parameters_label">Parametrii de intrare</string>
     <string name="openapsma_glucose_status_label">Stare glicemie</string>
@@ -40,7 +40,6 @@
     <string name="maxvalueinpreferences">valoare maximă în preferințe</string>
     <string name="hardlimit">limită fizică</string>
     <!--    Autotune   -->
-    <string name="insulin_peak">Vârf</string>
     <!--    Loop -->
     <string name="smb_frequency_exceeded">S-a administrat un bolus în ultimele 3 minute, nu se livrează SMB</string>
     <string name="pump_not_initialized">Pompa nu este inițializată!</string>

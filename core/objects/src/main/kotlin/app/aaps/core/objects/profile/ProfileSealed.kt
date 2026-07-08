@@ -1,5 +1,6 @@
 package app.aaps.core.objects.profile
 
+import app.aaps.core.data.configuration.Constants
 import app.aaps.core.data.model.GlucoseUnit
 import app.aaps.core.data.model.ICfg
 import app.aaps.core.data.model.IDs
@@ -123,6 +124,7 @@ sealed class ProfileSealed(
         value.timeZone.rawOffset.toLong(),
         activePlugin?.activeAPS
     ) {
+
         override var iCfg: ICfg? = null
     }
 
@@ -149,46 +151,35 @@ sealed class ProfileSealed(
         value.timeZone.rawOffset.toLong(),
         null
     ), PumpProfile {
+
         override val iCfg = null
     }
 
     override fun isValid(from: String, pump: Pump, config: Config, rh: ResourceHelper, notificationManager: NotificationManager, hardLimits: HardLimits, sendNotifications: Boolean): Profile.ValidityCheck {
-        val validityCheck = Profile.ValidityCheck()
-        val description = pump.pumpDescription
+        // Full validity = semantic (pump-independent) AND pump compatibility. Activating a profile
+        // on the pump requires both; editing, local storage and Nightscout sync only require
+        // [validateSemantic] (a profile that's merely incompatible with the *current* pump is still
+        // valid data worth keeping and uploading).
+        val semantic = validateSemantic(rh, hardLimits)
+        val pumpCheck = validatePump(from, pump, config, rh, notificationManager, sendNotifications)
+        return Profile.ValidityCheck(semantic.isValid && pumpCheck.isValid).also {
+            it.reasons.addAll(semantic.reasons)
+            it.reasons.addAll(pumpCheck.reasons)
+        }
+    }
 
+    /**
+     * Pump-independent ("semantic") validity: every value within the global hard limits. This is
+     * the gate for editing, local storage and Nightscout sync — independent of the active pump, so
+     * switching pumps never silently blocks profile sync.
+     */
+    fun validateSemantic(rh: ResourceHelper, hardLimits: HardLimits): Profile.ValidityCheck {
+        val validityCheck = Profile.ValidityCheck()
         for (basal in basalBlocks) {
             val basalAmount = basal.amount * percentage / 100.0
-            if (!description.is30minBasalRatesCapable) {
-                // Check for hours alignment
-                val duration: Long = basal.duration
-                if (duration % 3600000 != 0L) {
-                    if (sendNotifications && config.APS) {
-                        notificationManager.post(NotificationId.BASAL_PROFILE_NOT_ALIGNED_TO_HOURS, R.string.basalprofilenotaligned, from)
-                    }
-                    validityCheck.isValid = false
-                    validityCheck.reasons.add(
-                        rh.gs(R.string.basalprofilenotaligned, from)
-                    )
-                    break
-                }
-            }
             if (!hardLimits.isInRange(basalAmount, 0.01, hardLimits.maxBasal())) {
                 validityCheck.isValid = false
                 validityCheck.reasons.add(rh.gs(R.string.value_out_of_hard_limits, rh.gs(R.string.basal_value), basalAmount))
-                break
-            }
-            // Check for minimal basal value
-            if (basalAmount < description.basalMinimumRate) {
-                basal.amount = description.basalMinimumRate
-                if (sendNotifications) sendBelowMinimumNotification(from, notificationManager, rh)
-                validityCheck.isValid = false
-                validityCheck.reasons.add(rh.gs(R.string.minimalbasalvaluereplaced, from))
-                break
-            } else if (basalAmount > description.basalMaximumRate) {
-                basal.amount = description.basalMaximumRate
-                if (sendNotifications) sendAboveMaximumNotification(from, notificationManager, rh)
-                validityCheck.isValid = false
-                validityCheck.reasons.add(rh.gs(R.string.maximumbasalvaluereplaced, from))
                 break
             }
         }
@@ -248,6 +239,50 @@ sealed class ProfileSealed(
         return validityCheck
     }
 
+    /**
+     * Pump-compatibility validity: only the basal block is pump-dependent. Checks that each basal
+     * rate is deliverable by the active pump (minimum/maximum rate) and that the schedule fits the
+     * pump's time granularity (30-min vs full-hour). This gates profile *activation* and drives the
+     * non-blocking "won't run on this pump" warning shown while editing/viewing — it never blocks
+     * editing, storage or sync.
+     */
+    fun validatePump(from: String, pump: Pump, config: Config, rh: ResourceHelper, notificationManager: NotificationManager, sendNotifications: Boolean): Profile.ValidityCheck {
+        val validityCheck = Profile.ValidityCheck()
+        val description = pump.pumpDescription
+        for (basal in basalBlocks) {
+            val basalAmount = basal.amount * percentage / 100.0
+            if (!description.is30minBasalRatesCapable) {
+                // Check for hours alignment
+                val duration: Long = basal.duration
+                if (duration % 3600000 != 0L) {
+                    if (sendNotifications && config.APS) {
+                        notificationManager.post(NotificationId.BASAL_PROFILE_NOT_ALIGNED_TO_HOURS, R.string.basalprofilenotaligned, from)
+                    }
+                    validityCheck.isValid = false
+                    validityCheck.reasons.add(
+                        rh.gs(R.string.basalprofilenotaligned, from)
+                    )
+                    break
+                }
+            }
+            // Check for minimal basal value
+            if (basalAmount < description.basalMinimumRate) {
+                basal.amount = description.basalMinimumRate
+                if (sendNotifications) sendBelowMinimumNotification(from, notificationManager, rh)
+                validityCheck.isValid = false
+                validityCheck.reasons.add(rh.gs(R.string.minimalbasalvaluereplaced, from))
+                break
+            } else if (basalAmount > description.basalMaximumRate) {
+                basal.amount = description.basalMaximumRate
+                if (sendNotifications) sendAboveMaximumNotification(from, notificationManager, rh)
+                validityCheck.isValid = false
+                validityCheck.reasons.add(rh.gs(R.string.maximumbasalvaluereplaced, from))
+                break
+            }
+        }
+        return validityCheck
+    }
+
     protected open fun sendBelowMinimumNotification(from: String, notificationManager: NotificationManager, rh: ResourceHelper) {
         notificationManager.post(NotificationId.MINIMAL_BASAL_VALUE_REPLACED, R.string.minimalbasalvaluereplaced, from)
     }
@@ -261,7 +296,7 @@ sealed class ProfileSealed(
             is PS   -> value.glucoseUnit
             is EPS  -> value.glucoseUnit
             is Pure -> value.glucoseUnit
-            is PP -> value.glucoseUnit
+            is PP   -> value.glucoseUnit
         }
 
     override val timeshift: Int
@@ -333,12 +368,12 @@ sealed class ProfileSealed(
         getValuesList(icBlocks, 100.0 / percentage, DecimalFormat("0.0"), rh.gs(R.string.profile_carbs_per_unit), dateUtil)
 
     override fun getIsfList(rh: ResourceHelper, dateUtil: DateUtil): String =
-        getValuesList(isfBlocks, 100.0 / percentage, DecimalFormat("0.0"), units.asText + rh.gs(R.string.profile_per_unit), dateUtil)
+        getValuesList(isfBlocks, 100.0 / percentage, DecimalFormat("0.0"), rh.gs(if (units == GlucoseUnit.MGDL) R.string.profile_isf_units_mgdl else R.string.profile_isf_units_mmol), dateUtil)
 
     override fun getBasalList(rh: ResourceHelper, dateUtil: DateUtil): String =
         getValuesList(basalBlocks, percentage / 100.0, DecimalFormat("0.00"), rh.gs(R.string.profile_ins_units_per_hour), dateUtil)
 
-    override fun getTargetList(rh: ResourceHelper, dateUtil: DateUtil): String = getTargetValuesList(targetBlocks, DecimalFormat("0.0"), units.asText, dateUtil)
+    override fun getTargetList(rh: ResourceHelper, dateUtil: DateUtil): String = getTargetValuesList(targetBlocks, DecimalFormat("0.0"), units.displayLabel, dateUtil)
 
     override fun convertToNonCustomizedProfile(dateUtil: DateUtil): PureProfile =
         PureProfile(
@@ -524,5 +559,5 @@ sealed class ProfileSealed(
         dateUtil.now() in timestamp..timestamp + (duration ?: 0L)
 
     private fun toMgdl(value: Double, units: GlucoseUnit): Double =
-        if (units == GlucoseUnit.MGDL) value else value * GlucoseUnit.MMOLL_TO_MGDL
+        if (units == GlucoseUnit.MGDL) value else value * Constants.MMOLL_TO_MGDL
 }

@@ -7,8 +7,8 @@ import app.aaps.core.interfaces.configuration.Config
 import app.aaps.core.interfaces.constraints.ConstraintsChecker
 import app.aaps.core.interfaces.logging.UserEntryLogger
 import app.aaps.core.interfaces.plugin.ActivePlugin
-import app.aaps.core.interfaces.profile.LocalProfileManager
 import app.aaps.core.interfaces.profile.ProfileFunction
+import app.aaps.core.interfaces.profile.ProfileRepository
 import app.aaps.core.interfaces.receivers.ReceiverStatusStore
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.scenes.SceneAutomationApi
@@ -42,10 +42,10 @@ class CarbTimerImplTest : TestBase() {
     @Mock lateinit var locationServiceHelper: LocationServiceHelper
     @Mock lateinit var activePlugin: ActivePlugin
     @Mock lateinit var profileFunction: ProfileFunction
+    @Mock lateinit var profileRepository: ProfileRepository
     @Mock lateinit var preferences: Preferences
     @Mock lateinit var receiverStatusStore: ReceiverStatusStore
     @Mock lateinit var uel: UserEntryLogger
-    @Mock lateinit var localProfileManager: LocalProfileManager
     @Mock lateinit var sceneApi: SceneAutomationApi
 
     private val injector = HasAndroidInjector {
@@ -59,26 +59,26 @@ class CarbTimerImplTest : TestBase() {
     private lateinit var dateUtil: DateUtil
     private lateinit var timerUtil: TimerUtil
 
-    private lateinit var automationPlugin: AutomationPlugin
+    private lateinit var automationRuntime: AutomationRuntime
 
     @BeforeEach fun init() {
         whenever(rh.gs(anyInt())).thenReturn("")
         whenever(profileFunction.getUnits()).thenReturn(GlucoseUnit.MGDL)
         dateUtil = DateUtilImpl(context)
         timerUtil = TimerUtil(context, rh, rxBus)
-        automationPlugin = AutomationPlugin(
-            injector, aapsLogger, rh, preferences, context, fabricPrivacy, loop, rxBus, constraintChecker, aapsSchedulers, config, locationServiceHelper, dateUtil, activePlugin, timerUtil, receiverStatusStore, uel, localProfileManager, sceneApi
+        automationRuntime = AutomationRuntime(
+            injector, aapsLogger, rh, preferences, context, fabricPrivacy, loop, rxBus, constraintChecker, aapsSchedulers, config, locationServiceHelper, dateUtil, activePlugin, timerUtil, receiverStatusStore, uel, profileRepository, sceneApi
         )
     }
 
     @Test fun doTest() {
-        assertThat(automationPlugin.size()).isEqualTo(0)
-        automationPlugin.scheduleAutomationEventEatReminder()
-        assertThat(automationPlugin.size()).isEqualTo(1)
-        automationPlugin.removeAutomationEventEatReminder()
-        assertThat(automationPlugin.size()).isEqualTo(0)
+        assertThat(automationRuntime.size()).isEqualTo(0)
+        automationRuntime.scheduleAutomationEventEatReminder()
+        assertThat(automationRuntime.size()).isEqualTo(1)
+        automationRuntime.removeAutomationEventEatReminder()
+        assertThat(automationRuntime.size()).isEqualTo(0)
 
-        automationPlugin.scheduleTimeToEatReminder(1)
+        automationRuntime.scheduleTimeToEatReminder(1)
         verify(context, times(1)).startActivity(any())
     }
 }

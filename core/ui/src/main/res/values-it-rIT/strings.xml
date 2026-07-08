@@ -2,6 +2,10 @@
 <resources>
     <string name="error_field_must_not_be_empty">Il campo non deve essere vuoto</string>
     <string name="error_mustbe4hexadidits">Devono essere 4 caratteri tra ABCDEF0123456789</string>
+    <string name="authorized_clients_manage_label">Client autorizzati</string>
+    <string name="authorized_clients_manage_desc">Gestisci i dispositivi client accoppiati che controllano questo master.</string>
+    <string name="pair_with_master_manage_label">Accoppia con master</string>
+    <string name="pair_with_master_manage_desc">Inserisci il PIN di accoppiamento di un master per consentire a questo client di inviare comandi firmati.</string>
     <!--    General-->
     <string name="treatments">Trattamenti</string>
     <string name="treatments_history">Cronologia trattamenti</string>
@@ -16,6 +20,7 @@
     <string name="refresh">Aggiorna</string>
     <string name="no_history_records">Non è stato trovato alcun dato</string>
     <string name="error">Errore</string>
+    <string name="navigation_error_screen_not_found">Impossibile aprire lo schermo (non disponibile in questa configurazione)</string>
     <string name="profile_set_ok">Profilo basale aggiornato nel micro</string>
     <string name="invalid_input">Dati di input non validi</string>
     <string name="invalid_number">Numero non valido</string>
@@ -29,11 +34,14 @@
     <string name="failed_update_basal_profile">Impossibile aggiornare il profilo basale</string>
     <string name="no_valid_basal_rate">Nessuna velocità basale valida letta dal micro</string>
     <string name="limiting_iob">Limitazione IOB a %1$.1f U a causa di: %2$s</string>
-    <string name="loop_disabled">LOOP DISABILITATO DAI VINCOLI</string>
     <string name="loop_disabled_by_user">Loop disabilitato dall\'utente</string>
     <string name="event_type">Tipo evento</string>
-    <string name="mgdl">mg/dl</string>
-    <string name="mmol">mmol/l</string>
+    <string name="mgdl">mg/dL</string>
+    <string name="mmol">mmol/L</string>
+    <string name="profile_isf_units_mgdl">mg/dL/U</string>
+    <string name="profile_isf_units_mmol">mmol/L/U</string>
+    <string name="bg_mgdl">%1$d mg/dL</string>
+    <string name="bg_mmol">%1$.1f mmol/L</string>
     <string name="save">Salva</string>
     <string name="skip">Salta</string>
     <string name="switch_to_edit">Modifica</string>
@@ -49,11 +57,13 @@
     <string name="patient_name_default" comment="This is default patient display name, when user does not provide real one">Utente</string>
     <string name="result">Risultato</string>
     <string name="settings">Impostazioni</string>
-    <string name="simple_mode">Modalità semplice</string>
+    <string name="open_plugin">Apri plugin</string>
+    <string name="configbuilder_pick_one_hint">Sceglierne uno. Solo uno alla volta può essere attivo.</string>
+    <string name="configbuilder_pick_many_hint">Scegli tutte le opzioni che si applicano.</string>
+    <string name="configbuilder_no_selection_warning">Nessun plugin selezionato in questa categoria.</string>
     <string name="expand">Espandi</string>
     <string name="collapse">Contrai</string>
     <string name="no_compose_preferences">Nessuna preferenza disponibile per questo plugin</string>
-    <string name="plugin_no_preferences">Il plugin non supporta le preferenze</string>
     <string name="confirm_password_hint">Conferma la password</string>
     <string name="confirm_pin_hint">Conferma il PIN</string>
     <string name="preference_range_summary" comment="%1$s=current value, %2$s=unit label, %3$s=minimum, %4$s=maximum. Example: 5.0 U (0.0 – 10.0)">%1$s%2$s (%3$s – %4$s)</string>
@@ -62,6 +72,7 @@
     <string name="configbuilder_insulin">Insulina</string>
     <string name="configbuilder_bgsource">Sorgente Glicemia</string>
     <string name="configbuilder_smoothing">Smoothing</string>
+    <string name="configbuilder_calibration">Calibrazione</string>
     <string name="configbuilder_pump">Micro</string>
     <string name="configbuilder_sensitivity">Rilevamento sensibilità</string>
     <string name="configbuilder_aps">APS</string>
@@ -85,7 +96,6 @@
     <string name="mute">Muto</string>
     <string name="success">OK</string>
     <string name="advanced_settings_title">Impostazioni avanzate</string>
-    <string name="extendedbolusdeliveryerror">Errore erogazione bolo esteso</string>
     <string name="extended_bolus">Bolo esteso</string>
     <string name="paused">In pausa</string>
     <string name="running">In esecuzione</string>
@@ -95,8 +105,11 @@
     <string name="androidaps_start">AAPS avviato</string>
     <string name="formatsignedinsulinunits">%1$+.2f U</string>
     <string name="format_carbs">%1$d g</string>
+    <string name="format_carbs_split" comment="Compact carbs summary when a food type splits the entry into immediate + extended carbs. %1$d=immediate carbs (g), %2$d=extended (eCarbs) carbs (g). Example: 9+2 g">%1$d+%2$d g</string>
     <string name="format_hours">%1$.2f h</string>
     <string name="format_mins">%1$d min</string>
+    <string name="confirmation_line" comment="Confirmation-summary line, joins a label and an already-formatted value. %1$s = label, %2$s = value with its unit. Example: Bolus: 1.50 U">%1$s: %2$s</string>
+    <string name="value_with_unit" comment="A numeric value followed by its unit, when no dedicated value template exists. %1$s = value, %2$s = unit. Example: 120 mg/dl">%1$s %2$s</string>
     <string name="objectives">Obiettivi</string>
     <string name="please_wait">Attendi…</string>
     <string name="stop">Stop</string>
@@ -183,6 +196,8 @@
     <string name="reset">Reset</string>
     <string name="profileswitch_ismissing">Nessun cambio profilo. Effettua un cambio profilo o premi \"Attiva profilo\" nella sezione Profilo locale.</string>
     <string name="profile">Profilo</string>
+    <string name="percentage_label">Percentuale</string>
+    <string name="timeshift_label">Sfasamento temporale</string>
     <string name="confirm_remove_multiple_items">Sicuro di voler eliminare %1$d elementi</string>
     <string name="overview_treatment_label">Trattamento</string>
     <string name="copytolocalprofile">Creare un nuovo profilo da questo profilo?</string>
@@ -235,6 +250,7 @@
     <string name="engineering_mode_enabled">Engineering mode abilitata</string>
     <string name="back">Indietro</string>
     <string name="next">Prossimo</string>
+    <string name="pref_syncs_with_main_phone">Sincronizza con il telefono principale</string>
     <string name="show_hide_records">Nascondi record di loop</string>
     <!--    Protection-->
     <string name="wrongpassword">Password errata</string>
@@ -245,7 +261,6 @@
     <string name="basalprofilenotaligned">Valori basali non allineati alle ore: %1$s</string>
     <string name="minimalbasalvaluereplaced">Valore basale sostituito dal minimo valore supportato: %1$s</string>
     <string name="maximumbasalvaluereplaced">Valore basale sostituito dal massimo valore supportato: %1$s</string>
-    <string name="profile_per_unit">/U</string>
     <string name="profile_ins_units_per_hour">U/h</string>
     <string name="profile_carbs_per_unit">g/U</string>
     <!--    ProfileFunction-->
@@ -321,6 +336,8 @@
     <string name="temporary_target">Target temporaneo</string>
     <string name="temporary_targets">Target temporanei</string>
     <string name="running_mode">Modalità esecuzione</string>
+    <string name="running_mode_change_not_allowed">Cambio modalità di esecuzione non disponibile</string>
+    <string name="pump_reconnect">Riconnetti micro</string>
     <string name="scene">Scena</string>
     <string name="scenes">Scene</string>
     <string name="scene_desc">Situazione preset — attivare azioni multiple contemporaneamente</string>
@@ -328,6 +345,7 @@
     <string name="scene_deactivate">Fine Scena</string>
     <string name="scene_active">Attivo</string>
     <string name="scene_ended">Scena conclusa</string>
+    <string name="scene_end_active">Fine scena attiva</string>
     <string name="scene_confirm_activate">Attivare la scena \"%1$s\"?</string>
     <string name="scene_confirm_deactivate">Terminare la scena \"%1$s\" e ripristinare le modifiche?</string>
     <string name="scene_conflict_active_tt">Il target temporaneo attivo verrà sostituito</string>
@@ -335,7 +353,8 @@
     <string name="scene_conflict_active_running_mode">La modalità di esecuzione attiva verrà sostituita</string>
     <string name="scene_conflict_active_scene">Scena attiva \"%1$s\" sarà terminata prima</string>
     <string name="scene_action_tt">Temp-Target %1$s</string>
-    <string name="scene_action_profile">Profilo: %1$s %2$d%%</string>
+    <string name="scene_action_profile" comment="%1$s=profile name, %2$d=percentage. Example: Profile: Default 150%">Profilo: %1$s %2$d%%</string>
+    <string name="scene_action_profile_pct_only" comment="%1$d=percentage, used when no specific named profile. Example: Profile: 150%">Profilo: %1$d%%</string>
     <string name="scene_action_smb_on">Abilita SMB</string>
     <string name="scene_action_smb_off">Disabilita SMB</string>
     <string name="scene_action_running_mode">Modalità in esecuzione: %1$s</string>
@@ -344,7 +363,6 @@
     <string name="scene_management_desc">Crea, modifica e gestisci scene</string>
     <string name="scene_action_count">Azioni %1$d</string>
     <string name="scene_start_from_template">Inizia da un modello</string>
-    <string name="scene_editor_reason">Motivo</string>
     <string name="scene_editor_target">Target</string>
     <string name="scene_editor_tt_preset">TT preset</string>
     <string name="scene_editor_no_tt_presets">Nessun preset TT configurato</string>
@@ -366,6 +384,42 @@
     <string name="scene_no_profile_store">Nessun archivio profilo disponibile</string>
     <string name="scene_no_actions">La scena non ha azioni</string>
     <string name="scene_profile_not_found">Profilo \"%1$s\" non trovato</string>
+    <string name="scene_lock_banner_master_offline">Dispositivo master irraggiungibile. I controlli della scena riprenderanno quando la connessione viene ripristinata.</string>
+    <string name="scene_lock_banner_control_disabled">Il master ha disabilitato il controllo remoto. I controlli delle scene riprenderanno quando saranno riattivati sul master.</string>
+    <string name="master_offline_banner">Dispositivo master irraggiungibile. La modifica è disabilitata fino al ripristino della connessione.</string>
+    <string name="master_control_disabled_banner">Il Master ha disabilitato il controllo remoto. La modifica è disabilitata fino a quando non viene riattivata sul master.</string>
+    <string name="scene_lock_reason_master_offline">Master disconnesso</string>
+    <string name="scene_lock_reason_control_disabled">Controllo remoto disabilitato</string>
+    <string name="scene_lock_reason_scene_active">Ferma prima la scena in esecuzione</string>
+    <!-- Client-control action labels (shown in the pending/failure modal as "Couldn't {label}") -->
+    <string name="clientcontrol_action_set_temp_target">Avvia temp-target</string>
+    <string name="clientcontrol_action_cancel_temp_target">Cancella temp target</string>
+    <string name="clientcontrol_action_activate_scene">Attivare la scena %1$s</string>
+    <string name="clientcontrol_action_deactivate_scene">Fine Scena</string>
+    <string name="clientcontrol_action_update_settings">Aggiorna le impostazioni</string>
+    <string name="clientcontrol_action_deliver_bolus">Eroga bolo</string>
+    <!-- Client-control failure reasons (mapped from a FailureReason code on the showing device) -->
+    <string name="clientcontrol_fail_not_paired">Questo dispositivo non è abbinato a un master.</string>
+    <string name="clientcontrol_fail_not_reachable">Il master è offline.</string>
+    <string name="clientcontrol_pump_out_of_sync" comment="Shown when a follower relays a temp basal / extended bolus but its cached pump type no longer matches the master\'s pump">Configurazione del micro non sincronizzata con il master. Riprova.</string>
+    <string name="clientcontrol_fail_no_reply">Nessuna risposta dal master in tempo.</string>
+    <string name="clientcontrol_fail_expired">Il comando è scaduto prima che il master lo abbia applicato.</string>
+    <string name="clientcontrol_fail_busy">Un\'altra azione è già in corso.</string>
+    <string name="clientcontrol_fail_send_failed">Impossibile raggiungere Nightscout.</string>
+    <string name="clientcontrol_fail_no_active_profile">Il master non ha un profilo attivo per applicarlo.</string>
+    <string name="clientcontrol_fail_scene_not_found">La scena non esiste più.</string>
+    <string name="clientcontrol_fail_site_entry_not_found">La voce del sito non esiste più.</string>
+    <string name="clientcontrol_fail_scene_disabled">La scena è disabilitata.</string>
+    <string name="clientcontrol_fail_partial">Alcune azioni non possono essere applicate.</string>
+    <string name="clientcontrol_fail_execution">Il master non può applicare questa richiesta.</string>
+    <string name="clientcontrol_fail_control_disabled">Il controllo remoto sul master è spento.</string>
+    <string name="clientcontrol_fail_no_pending_bolus">Il bolo preparato è scaduto o è stato sostituito. Tocca nuovamente il pulsante.</string>
+    <string name="clientcontrol_fail_bolus_compute">Il master non è riuscito a calcolare il bolo (mancanza di glucosio / profilo, o pompa non pronta).</string>
+    <string name="clientcontrol_fail_internal">Qualcosa è andato storto.</string>
+    <string name="clientcontrol_fail_unknown">Comando fallito.</string>
+    <string name="clientcontrol_unconfirmed_wear">Stato sconosciuto — controllare il telefono/Nightscout prima di rifare il bolo.</string>
+    <string name="clientcontrol_bolus_progress_stalled_title">Connessione persa — stato di consegna sconosciuto</string>
+    <string name="clientcontrol_bolus_progress_stalled_body">Questo telefono ha smesso di ricevere aggiornamenti dal master. Il bolo potrebbe essere ancora in consegna o potrebbe essere finito. Chiudere questo lo nasconde solo qui — non ferma la pompa. Controlla il telefono principale per l\'importo effettivamente consegnato.</string>
     <string name="scene_revert_tt">Cancella basali temporanee</string>
     <string name="scene_revert_profile">Ripristina la modifica del profilo</string>
     <string name="scene_revert_smb_on">Riattiva SMB</string>
@@ -421,13 +475,13 @@
     <string name="activity">Attività</string>
     <string name="wear">Smartwatch</string>
     <string name="automation">Automazione</string>
+    <string name="automation_management_desc">Crea regole che eseguono le azioni automaticamente in base ai trigger</string>
     <string name="settingsexport">Esportazione Impostazioni</string>
     <string name="custom">Personalizzato</string>
     <string name="preset_settings">Impostazioni Preset</string>
     <string name="activation">Attivazione</string>
     <string name="temp_target_management">Target Temporaneo</string>
     <string name="revert_to_defaults">Ripristino delle impostazioni predefinite</string>
-    <string name="confirm_cancel_temp_target">Annullare il target temporaneo attivo?</string>
     <string name="loop">Loop</string>
     <string name="ns">NS</string>
     <string name="record">Record</string>
@@ -447,6 +501,8 @@
     <string name="location_front_left_lower_abdomen">Addome Anteriore Basso Sinistro</string>
     <string name="location_back_right_buttock">Natica Destra</string>
     <string name="location_back_left_buttock">Natica Sinistra</string>
+    <string name="location_back_right_lower_back">Indietro Inferiore Destro</string>
+    <string name="location_back_left_lower_back">Sinistra Inferiore Indietro</string>
     <string name="location_side_right_upper_thigh">Coscia Superiore Destra Esterna</string>
     <string name="location_side_left_upper_thigh">Coscia Superiore Esterna Sinistra</string>
     <string name="location_side_right_lower_thigh">Coscia Inferiore Esterna Destra</string>
@@ -466,6 +522,7 @@
     <string name="arrow_center">Centro</string>
     <!--    Command-->
     <string name="connectiontimedout">Time out connessione</string>
+    <string name="command_replaced">Sostituito con un nuovo comando</string>
     <string name="pump_not_configured">Micro non configurato</string>
     <!--    PumpEnactResult-->
     <string name="enacted">Emanato</string>
@@ -528,6 +585,7 @@
     <string name="uel_tt_ns_refresh">TARGET TEMPORANEO NS: AGGIORNAMENTO</string>
     <string name="uel_automation_removed">AUTOMAZIONE RIMOSSA</string>
     <string name="uel_bg_removed">BG RIMOSSO</string>
+    <string name="uel_calibration_removed">CALIBRAZIONE RIMOSSA</string>
     <string name="uel_careportal_removed">PORTALE RIMOSSO</string>
     <string name="uel_bolus_removed">BOLO RIMOSSO</string>
     <string name="uel_carbs_removed">CHO RIMOSSI</string>
@@ -587,6 +645,7 @@
     <string name="uel_running_mode_updarted">MODALITÀ RUNNING AGGIORNATA</string>
     <string name="uel_scene_activated">SCENA ATTIVATA</string>
     <string name="uel_scene_deactivated">SCENA DISATTIVATA</string>
+    <string name="uel_remote_config_changed">CONFIG REMOTA MODIFICATA</string>
     <!-- HardLimits -->
     <string name="profile_low_target">Target basso (profilo)</string>
     <string name="profile_high_target">Target alto (profilo)</string>
@@ -608,7 +667,8 @@
     <string name="no_profile_selected">Nessun profilo selezionato</string>
     <string name="missing_profile_name">Nome profilo mancante</string>
     <string name="profile_not_saved_activate">Profilo non salvato. Si prega di salvare il profilo prima di attivarlo.</string>
-    <string name="profile_activation_failed">Attivazione del profilo fallita</string>
+    <string name="profile_basal_not_compatible_with_pump">La velocità basale non è compatibile col micro corrente e non può essere attivata. Ridurre la percentuale o regolare la velocità basale.</string>
+    <string name="profile_pump_incompatible_label">Limite micro</string>
     <string name="error_in_ic_values">Errore nei valori IC</string>
     <string name="error_in_isf_values">Errore nei valori ISF</string>
     <string name="error_in_basal_values">Errore nei valori della basale</string>
@@ -642,7 +702,10 @@
     <string name="basal">Basale</string>
     <string name="basalpct">% basale</string>
     <string name="sensitivity">Sensibilità</string>
-    <string name="isf_for_carbs">ISF per Calcolatrice e Assorbimento di Carbo: %1$.1f</string>
+    <string name="isf_for_carbs">ISF per Calcolatore e Assorbimento di Carbo: %1$.1f</string>
+    <string name="isf_profile">Profilo ISF: %1$.1f</string>
+    <string name="isf_variable">ISF Variabile: %1$.1f</string>
+    <string name="isf_effective">ISF Effettivo: %1$.1f</string>
     <string name="autosens_long">Valore Autosens: %.0f%%</string>
     <string name="autosens_short">%.0f%%</string>
     <string name="algorithm_long">Autosens nell\'algoritmo: %.0f%%</string>
@@ -683,26 +746,15 @@
     <string name="wizard_include_cob">Includi IOB</string>
     <string name="wizard_calculation">Calcolo</string>
     <string name="no_action_selected">Nessuna azione selezionata, non succederà nulla</string>
-    <string name="carb_equal_zero_no_action">CHO = 0. Nessuna azione intrapresa!</string>
-    <string name="bolus_equal_zero_no_action">Bolo = 0. Nessuna azione intrapresa!</string>
+    <string name="carbs_removal_cob_limit" comment="Shown under the carbs field when removing carbs (a negative value). %1$d = grams of carbs currently on board, the maximum removable. Example: Max removal: 30 g (carbs on board)">Rimozione massima: %1$d g (carboidrati a bordo)</string>
     <string name="wizard_no_insulin_required">Insulina non necessaria</string>
     <string name="wizard_no_actual_bg">Nessun recente valore BG su cui basare il calcolo!</string>
     <string name="wizard_no_active_profile">Nessun profilo attivo!</string>
-    <string name="wizard_no_cob">Valore COB sconosciuto! Lettura BG mancante o recente riavvio dell\'app?</string>
     <string name="wizard_carbs_constraint">Violazione vincolo CHO!</string>
-    <string name="wizard_explain_calc">Calc (IC: %1$.1f, ISF: %2$.1f)</string>
-    <string name="wizard_explain_carbs">CHO: %1$.2fU</string>
-    <string name="wizard_explain_cob">COB: %1$.0fg %2$.2fU</string>
-    <string name="wizard_explain_bg">BG: %1$.2fU</string>
-    <string name="wizard_explain_iob">IOB: %1$.2fU</string>
-    <string name="wizard_explain_superbolus">Superbolo: %1$.2fU</string>
-    <string name="wizard_explain_trend">Trend di 15\': %1$.2fU</string>
     <string name="wizard_trend_detail">Tendenza 15min (%1$s %2$s)</string>
-    <string name="wizard_explain_percent">Percentuale: %1$.2fU x %2$d%% ≈ %3$.2fU</string>
     <string name="wizard_constraint_bolus_size">Violazione vincolo insulina!\nImpossibile erogare %1$.2fU</string>
-    <string name="wizard_explain_tt">TempT: %1$s</string>
-    <string name="wizard_explain_tt_to">%1$s a %2$s</string>
     <string name="wizard_pump_not_available">Nessun micro disponibile!</string>
+    <string name="quick_wizard_not_available">Il calcolo rapido selezionato non è più disponibile, aggiorna il riquadro</string>
     <string name="quickwizard_managemnt">Assistente Rapido</string>
     <!--    Preferences-->
     <string name="child">Bambino</string>
@@ -819,12 +871,14 @@
     <string name="clear_cloud_action">Cancella impostazioni</string>
     <string name="clear_cloud_settings">Cancella Impostazioni Cloud</string>
     <string name="clear_cloud_settings_message">Questo passerà alla memoria locale e cancellerà l\'autenticazione. Continuare?</string>
+    <string name="cloud_revoke_incomplete">Impostazioni cloud cancellate su questo dispositivo, ma non è stato possibile raggiungere l\'account per revocare completamente l\'accesso. Potresti voler rimuoverlo manualmente nelle impostazioni del tuo account.</string>
     <string name="cloud_connection_failed">Connessione all\'archiviazione cloud fallita</string>
     <string name="cloud_reauthorize_message">Connessione all\'archiviazione cloud non riuscita. Vuoi ri-autenticarti?</string>
     <string name="reauthorize">Ri-autenticazione</string>
     <string name="cloud_auth_success">Autenticazione archiviazione cloud riuscita</string>
     <string name="authorization_status">Stato Autorizzazione</string>
-    <string name="format_hour_minute">%1$dh %2$dm</string>
+    <string name="format_hour_minute" comment="%1$d=hours, %2$d=minutes. Example: 1 h 23 min">%1$d h %2$d min</string>
+    <string name="format_hours_only" comment="%1$d=hours, when minutes are zero. Example: 4 h">%1$d h</string>
     <!-- datetime layout -->
     <string name="event_time_label">Ora evento</string>
     <!-- BluetoothDevicePreference -->
@@ -1020,6 +1074,4 @@
     <string name="sensitivity_shortname" comment="Short label for Sensitivity/Autosens graph series">SENS%</string>
     <string name="variable_sensitivity_shortname" comment="Short label for Variable Sensitivity graph series">VSENS</string>
     <string name="steps_shortname" comment="Short label for Steps graph series">STEPS</string>
-    <string name="remove_items">Rimuovi elementi</string>
-    <string name="sort_items">Ordina elementi</string>
 </resources>

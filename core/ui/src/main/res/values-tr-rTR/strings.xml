@@ -14,10 +14,7 @@
     <string name="failed_update_basal_profile">Bazal profiliniz güncellenemedi</string>
     <string name="no_valid_basal_rate">Pompadan okunan geçerli bir bazal oranı yok</string>
     <string name="limiting_iob">%2$s\'den dolayı AİNS %1$.1f Ü ile sınırlandırılıyor</string>
-    <string name="loop_disabled">DÖNGÜ KISITLAMALARDAN DEVREDIŞI BIRAKILDI</string>
     <string name="event_type">Etkinlik tipi</string>
-    <string name="mgdl">mg/dl</string>
-    <string name="mmol">mmol/l</string>
     <string name="save">Kaydet</string>
     <string name="snooze">Ertele</string>
     <string name="virtual_pump">Sanal pompa</string>
@@ -41,7 +38,6 @@
     <string name="mute">Sessiz</string>
     <string name="success">Başarılı</string>
     <string name="advanced_settings_title">Gelişmiş Ayarlar</string>
-    <string name="extendedbolusdeliveryerror">Yayma bolus iletim hatası</string>
     <string name="extended_bolus">Yayma Bolus</string>
     <string name="paused">Duraklatıldı</string>
     <string name="tdd_total">GTD Toplam</string>
@@ -51,7 +47,6 @@
     <string name="formatsignedinsulinunits">%1$+.2f Ü</string>
     <string name="format_carbs">%1$d g</string>
     <string name="format_hours">%1$.2f s</string>
-    <string name="format_mins">%1$d dakika</string>
     <string name="objectives">Görevler</string>
     <string name="please_wait">Lütfen bekleyin…</string>
     <string name="stop">Dur</string>
@@ -164,7 +159,6 @@
     <string name="basalprofilenotaligned">Bazal değerler saatlerle uyumlu değil: %1$s</string>
     <string name="minimalbasalvaluereplaced">Desteklenen minimum değerle değiştirilen bazal değer: %1$s</string>
     <string name="maximumbasalvaluereplaced">Bazal değeri maksimum desteklenen değerle değiştirilir: %1$s</string>
-    <string name="profile_per_unit">/Ü</string>
     <string name="profile_ins_units_per_hour">Ü/s</string>
     <string name="profile_carbs_per_unit">g/Ü</string>
     <!--    ProfileFunction-->
@@ -210,6 +204,8 @@
     <string name="pump_battery_change">Pompa Pil Değişimi</string>
     <string name="temporary_target">Geçici hedef</string>
     <string name="running_mode">Çalışma modu</string>
+    <!-- Client-control action labels (shown in the pending/failure modal as "Couldn't {label}") -->
+    <!-- Client-control failure reasons (mapped from a FailureReason code on the showing device) -->
     <string name="careportal_temporarytargetvalue">Geçici hedef değeri</string>
     <string name="careportal_temporarytargetcancel">Geçici hedef iptali</string>
     <string name="boluswizard">Bolus sihirbazı</string>
@@ -374,7 +370,6 @@
     <string name="basal">Bazal</string>
     <string name="basalpct">Bazal %</string>
     <string name="sensitivity">Duyarlılık</string>
-    <string name="isf_for_carbs">Hesap makinesi ve Karb. emilimi için İDF: %1$.1f</string>
     <string name="autosens_long">Otoduyarlılık değeri: %.0f%%</string>
     <string name="algorithm_long">Algoritmadaki otoduyarlılık: %.0f%%</string>
     <!-- Autotune -->
@@ -392,22 +387,10 @@
     <string name="bolus_recorded_only">Bolus yalnızca kaydedilecektir (pompa ile iletilmez)</string>
     <string name="advisoralarm">Yemek zamanı alarmı çalıştır</string>
     <string name="no_action_selected">Seçili eylem yok, hiçbir şey olmayacak</string>
-    <string name="carb_equal_zero_no_action">Karb = 0. Hiçbir şey yapılmadı!</string>
     <string name="wizard_no_actual_bg">Hesaplamayı temel alacak yeni bir KŞ yok!</string>
     <string name="wizard_no_active_profile">Etkin profil ayarlanmadı!</string>
-    <string name="wizard_no_cob">Aktif karbonhidrat (AKRB) bilinmiyor! KŞ okuması eksik veya son uygulama yeniden başlatılsın mı?</string>
     <string name="wizard_carbs_constraint">Karbonhidrat kısıtlaması ihlali!</string>
-    <string name="wizard_explain_calc">Hesap (KİO: %1$.1f, İDF: %2$.1f)</string>
-    <string name="wizard_explain_carbs">Karb: %1$.2fÜ</string>
-    <string name="wizard_explain_cob">AKRB: %1$.0fg %2$.2fÜ</string>
-    <string name="wizard_explain_bg">KŞ: %1$.2fÜ</string>
-    <string name="wizard_explain_iob">AİNS: %1$.2fÜ</string>
-    <string name="wizard_explain_superbolus">Süperbolus: %1$.2fÜ</string>
-    <string name="wizard_explain_trend">15\' trend: %1$.2fÜ</string>
-    <string name="wizard_explain_percent">Yüzde: %1$.2fÜ x %2$d%% ≈ %3$.2fÜ</string>
     <string name="wizard_constraint_bolus_size">İnsülin kısıtlaması ihlali!\n%1$.2fÜ iletilemez</string>
-    <string name="wizard_explain_tt">GeçiciH: %1$s</string>
-    <string name="wizard_explain_tt_to">%1$s - %2$s</string>
     <string name="wizard_pump_not_available">Pompa mevcut değil!</string>
     <!--    Preferences-->
     <string name="child">Çocuk</string>
@@ -478,7 +461,6 @@
     <!-- Export destination chip labels -->
     <!-- Maintenance bottom sheet descriptions -->
     <!-- Cloud directory dialog (Compose) -->
-    <string name="format_hour_minute">%1$dsa %2$ddk</string>
     <!-- datetime layout -->
     <string name="event_time_label">Etkinlik saati</string>
     <!-- BluetoothDevicePreference -->

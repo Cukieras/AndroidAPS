@@ -2,12 +2,14 @@ package app.aaps.core.ui.compose
 
 import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.SideEffect
@@ -18,6 +20,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.core.view.WindowInsetsControllerCompat
 import app.aaps.core.interfaces.configuration.Config
 import app.aaps.core.interfaces.profile.ProfileUtil
@@ -61,6 +65,36 @@ val LocalDateUtil = compositionLocalOf<DateUtil> { error("No DateUtil provided")
  * Avoids threading config through multiple composable layers.
  */
 val LocalConfig = compositionLocalOf<Config> { error("No Config provided") }
+
+/**
+ * CompositionLocal exposing whether the master phone is currently reachable (see
+ * `NsClient.masterReachable`). Defaults to `true` so master, previews, and any non-client context
+ * are never gated; the main activity provides the live value on a client. Used to disable
+ * `Bidirectional` synced preference rows while the master is offline (their edits can't sync).
+ */
+val LocalMasterReachable = compositionLocalOf { true }
+
+/**
+ * Whether the master currently allows remote control (its stop/allow switch, see
+ * `NsClient.masterControlAllowed`). Defaults to `true` (master/previews/unpaired never show the
+ * distinct wording). When `false` on a client the offline banner shows a "remote control disabled"
+ * message instead of the generic "unreachable" one. Editing is already gated via [LocalMasterReachable]
+ * (which folds this in); this local only selects the banner wording.
+ */
+val LocalMasterControlAllowed = compositionLocalOf { true }
+
+/**
+ * Whether the user may make changes that need the master *right now*. On a master always `true` (no
+ * gating). On a client, `true` only while [LocalMasterReachable] is `true` — i.e. the master is
+ * reachable for the signed Client-Control channel that carries both config edits and remote actions.
+ * Single source for the per-screen offline gate (`!(AAPSCLIENT && !masterReachable)`); gates BOTH
+ * synced-config edits AND master-bound action buttons, so screens call this instead of re-spelling it.
+ * Returns `true` in `@Preview`/inspection — [LocalConfig] has no default (it would throw), and previews
+ * should render the enabled, un-gated state anyway (matching the `true` defaults of the other locals).
+ */
+@Composable
+fun masterEditingEnabled(): Boolean =
+    LocalInspectionMode.current || !(LocalConfig.current.AAPSCLIENT && !LocalMasterReachable.current)
 
 /**
  * CompositionLocal providing access to ProfileUtil for glucose unit conversions.
@@ -252,7 +286,7 @@ fun AapsTheme(
     // Scale typography up on tablets. Orientation-independent (smallest-width signal).
     val isTablet = LocalConfiguration.current.smallestScreenWidthDp >= TABLET_MIN_SW_DP
     val typographyScale = if (isTablet) 1.5f else 1f
-    val scaledMaterialTypography = remember(typographyScale) { Typography().scaled(typographyScale) }
+    val scaledMaterialTypography = remember(typographyScale) { Typography().withoutFontPadding().scaled(typographyScale) }
 
     CompositionLocalProvider(
         LocalProfileHelperColors provides profileViewerColors,
@@ -267,6 +301,15 @@ fun AapsTheme(
         ) {
             CompositionLocalProvider(
                 LocalAapsTypography provides aapsTypography(typographyScale),
+                // Bare `Text()` (e.g. the overview chips) reads LocalTextStyle, not the typography,
+                // so disable font padding here too — keeps the default size, just metric-centers glyphs.
+                LocalTextStyle provides LocalTextStyle.current.copy(
+                    platformStyle = PlatformTextStyle(includeFontPadding = false),
+                    lineHeightStyle = LineHeightStyle(
+                        alignment = LineHeightStyle.Alignment.Center,
+                        trim = LineHeightStyle.Trim.None
+                    )
+                ),
                 content = content
             )
         }

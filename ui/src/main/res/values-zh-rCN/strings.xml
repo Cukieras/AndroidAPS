@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="carbs_constraint_applied">碳水化合物约束条件应用了</string>
+    <string name="cancel_action_with_details" comment="%1$s=the word Cancel, %2$s=the active item being cancelled (e.g. a running temp basal or extended bolus description). Example: 'Cancel 150% 30min'">%1$s %2$s</string>
     <string name="no_temp_basal_running">无临时基础率运行中</string>
-    <string name="temp_target_short">临时目标</string>
     <string name="start_activity_tt">开始运动临时目标</string>
     <string name="start_eating_soon_tt">开始很快吃饭TT(临时目标)</string>
     <string name="start_hypo_tt">开始低的临时目标</string>
@@ -12,6 +11,7 @@
     <string name="widget_description">AAPS 小部件</string>
     <string name="widget_bg_graph_description">AAPS 血糖图表</string>
     <string name="widget_compact_bg_description">AAPS 血糖 + IOB+COB（紧凑）</string>
+    <string name="widget_small_description">AAPS 小</string>
     <!--     Activities-->
     <string name="activity_monitor">活动监视器</string>
     <string name="time_range">时间范围</string>
@@ -41,14 +41,6 @@
     <string name="bg_sensor">传感器</string>
     <!-- WizardDialog -->
     <!-- SiteRotationDialog -->
-    <string name="site_man">男性</string>
-    <string name="site_woman">女性</string>
-    <string name="site_child">儿童</string>
-    <string name="user_profile">用户信息</string>
-    <string name="user_profile_description">用户信息描述用于显示男性、女性或儿童最常用的部位</string>
-    <string name="site_management">部位管理配置</string>
-    <string name="site_management_description">在这里设置是否管理输注部位、CGM 传感器部位，或两者同时管理。该设置将用于在每次检测到新记录时，自动弹出部位更换提醒对话框</string>
-    <string name="update_site_change">更新部位位置</string>
     <string name="edit_site">编辑</string>
     <string name="record_site_location">部位位置：%1$s</string>
     <string name="record_site_arrow">部位箭头: %1$s</string>
@@ -136,29 +128,32 @@
     <!-- Insulin Management -->
     <string name="missing_insulin_name">缺少胰岛素名称</string>
     <string name="insulin_name_exists">胰岛素名称 %1$s 已存在，请选择新的名称</string>
+    <string name="insulin_external_update_title">胰岛素配置已更改</string>
+    <string name="insulin_external_update_message">已配对的客户端更改了胰岛素配置。点按“确定”可加载其更改并丢弃您未保存的编辑内容，或点按“取消”继续编辑（您下次保存时将覆盖其更改）。</string>
+    <string name="insulin_edit_target_gone">此胰岛素已在别处被移除，因此您的编辑无法保存。列表已重新加载。</string>
+    <string name="insulin_activation_applied">胰岛素激活已应用</string>
+    <!-- Client→master round-trip pending dialog -->
+    <string name="clientcontrol_pending_working_title">正在应用…</string>
+    <string name="clientcontrol_pending_working_text">正在等待主机确认…</string>
+    <string name="clientcontrol_pending_rejected_title">未应用</string>
+    <string name="clientcontrol_pending_failed_format">%1$s 无法完成。\n%2$s</string>
+    <!-- Partial success (e.g. a scene chained but some of the target\'s actions failed) — not a rejection -->
+    <string name="clientcontrol_pending_partial_title">部分应用</string>
+    <!-- %1$s = action label -->
+    <string name="clientcontrol_pending_partial_format">%1$s 已应用，但某些操作无法执行。\n请检查当前状态。</string>
+    <string name="clientcontrol_pending_unconfirmed_title">无法确认</string>
+    <!-- %1$s = action label, %2$s = reason. Sent but unconfirmed → will reconcile via sync-back -->
+    <string name="clientcontrol_pending_unconfirmed_format">%1$s 已发送，但未收到确认。\n%2$s\n 如果主机应用了该操作，它将在此处显示。</string>
+    <string name="clientcontrol_pending_stop_waiting">停止等待</string>
     <string name="a11y_add_new_insulin">新增胰岛素</string>
     <string name="a11y_delete_current_insulin">删除当前的胰岛素</string>
-    <string name="activate_insulin_no_profile">未找到生效的配置文件</string>
-    <string name="activate_insulin_new_insulin">新的胰岛素：%1$s</string>
-    <string name="activate_insulin_remaining">剩余： %1$d 分钟</string>
-    <string name="activate_insulin_profile_switch">将创建配置文件切换：\n\n<b>%1$s</b></string>
     <string name="load_peak_from">载入峰值来源</string>
     <string name="cannot_delete_last_insulin">无法删除最后一个胰岛素</string>
     <string name="cannot_delete_active_insulin">无法删除当前使用的胰岛素</string>
     <string name="reuse_profile_pct_hours">重新使用%1$d%% %2$d小时</string>
-    <string name="timeshift_label">时间偏移</string>
     <string name="percentage_label">百分比</string>
     <!-- LoopDialog -->
-    <string name="suspendloopfor1h">暂停闭环一个小时</string>
-    <string name="suspendloopfor2h">暂停闭环2个小时</string>
-    <string name="suspendloopfor3h">暂停闭环3个小时</string>
-    <string name="suspendloopfor10h">暂停闭环10个小时</string>
     <string name="disconnectpump">断开泵连接</string>
-    <string name="disconnectpumpfor15m">与泵断开连接15分钟</string>
-    <string name="disconnectpumpfor30m">与泵断开连接30分钟</string>
-    <string name="disconnectpumpfor1h">与泵断开连接1个小时</string>
-    <string name="disconnectpumpfor2h">与泵断开连接2个小时</string>
-    <string name="disconnectpumpfor3h">与泵断开连接3个小时</string>
     <string name="resume">恢复</string>
     <string name="reconnect">重新连接泵</string>
     <string name="duration15m">15 分钟</string>
@@ -189,6 +184,7 @@
     <string name="active_profile_indicator">激活</string>
     <string name="confirm_remove_profile">删除配置文件 %1$s 吗？</string>
     <string name="confirm_clone_profile">克隆配置文件 \"%1$s\"？</string>
+    <string name="profile_no_longer_exists">配置文件列表已更改—请重试</string>
     <string name="tbr_type_flag_extended">E</string>
     <string name="tbr_type_flag_suspended">S</string>
     <string name="tbr_type_flag_emulated_suspended">ES</string>
@@ -290,8 +286,6 @@
     <string name="quick_launch_no_profiles">在本地配置中创建配置文件以便在此使用</string>
     <string name="quick_launch_edit_profile_preset">编辑配置文件</string>
     <string name="quick_launch_profile_permanent">永久</string>
-    <string name="quick_launch_profile_confirm_pct">%1$d%%</string>
-    <string name="quick_launch_profile_confirm_dur">%1$d 分</string>
     <string name="select_arrow">选择箭头</string>
     <string name="loop_accept_nav_label">闭环</string>
     <string name="loop_accept_set_basal_question">接受新的临时基础率：</string>
@@ -301,4 +295,15 @@
     <string name="widget_rm_disabled">已禁用</string>
     <string name="widget_rm_suspended">已暂停</string>
     <string name="widget_rm_resume">恢复</string>
+    <!-- Calibration entry rejection reasons -->
+    <string name="cal_reject_delta_too_high">校准未保存：血糖变化过快（每5分钟 Δ %1$s %3$s，限制 %2$s）。请在血糖稳定后重试。</string>
+    <string name="cal_reject_no_pair">校准未保存：过去10分钟内未找到CGM读数。</string>
+    <string name="cal_reject_warmup">校准未保存：传感器仍处于2小时预热窗口内。</string>
+    <string name="cal_reject_no_session">校准未保存：当前无活动传感器会话。请先标记传感器更换。</string>
+    <!-- Calibration preflight messages shown in the dialog before submit -->
+    <string name="cal_precheck_warmup">传感器仍在预热中。校准可用时间为%1$s。</string>
+    <string name="cal_precheck_no_session">当前无活动传感器会话。</string>
+    <string name="cal_precheck_no_pair">过去10分钟内没有CGM读数。请检查传感器连接。</string>
+    <string name="cal_precheck_delta_too_high">血糖变化过快（每5分钟 Δ %1$s %3$s，限制为 %2$s）。请等待稳定。</string>
+    <string name="cal_precheck_mark_sensor_change">标记传感器更换</string>
 </resources>

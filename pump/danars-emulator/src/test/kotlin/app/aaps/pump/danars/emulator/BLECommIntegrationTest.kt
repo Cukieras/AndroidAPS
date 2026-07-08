@@ -2,8 +2,6 @@ package app.aaps.pump.danars.emulator
 
 import android.content.Context
 import app.aaps.core.interfaces.configuration.ConfigBuilder
-import app.aaps.core.interfaces.constraints.Constraint
-import app.aaps.core.interfaces.constraints.ConstraintsChecker
 import app.aaps.core.interfaces.insulin.ConcentrationHelper
 import app.aaps.core.interfaces.notifications.NotificationManager
 import app.aaps.core.interfaces.profile.ProfileStore
@@ -50,6 +48,8 @@ import app.aaps.pump.danars.encryption.BleEncryption
 import app.aaps.pump.danars.services.BLEComm
 import app.aaps.shared.tests.TestBase
 import com.google.common.truth.Truth.assertThat
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -82,7 +82,6 @@ class BLECommIntegrationTest : TestBase() {
     @Mock lateinit var notificationManager: NotificationManager
     @Mock lateinit var decimalFormatter: DecimalFormatter
     @Mock lateinit var profileStoreProvider: javax.inject.Provider<ProfileStore>
-    @Mock lateinit var constraintsChecker: ConstraintsChecker
     @Mock lateinit var detailedBolusInfoStorage: DetailedBolusInfoStorage
     @Mock lateinit var temporaryBasalStorage: TemporaryBasalStorage
 
@@ -106,8 +105,6 @@ class BLECommIntegrationTest : TestBase() {
         // Provide a stored pairing key so handshake skips pairing request
         whenever(preferences.get(DanaStringComposedKey.ParingKey, deviceName)).thenReturn("ABCD")
         whenever(danaRSPlugin.mDeviceName).thenReturn(deviceName)
-        // Constraint checker passes through the value unchanged
-        whenever(constraintsChecker.applyBolusConstraints(any<Constraint<Double>>())).thenAnswer { it.arguments[0] }
 
         // Real instances (no Android deps)
         bleEncryption = BleEncryption()
@@ -194,7 +191,7 @@ class BLECommIntegrationTest : TestBase() {
         state.currentBasal = 0.85
         state.iob = 2.5
 
-        val packet = DanaRSPacketGeneralInitialScreenInformation(aapsLogger, danaPump)
+        val packet = DanaRSPacketGeneralInitialScreenInformation(aapsLogger, danaPump, notificationManager)
         bleComm.sendMessage(packet)
 
         assertThat(packet.isReceived).isTrue()
@@ -367,7 +364,7 @@ class BLECommIntegrationTest : TestBase() {
         bleComm.sendMessage(setPacket)
 
         // Verify via screen info
-        val screenPacket = DanaRSPacketGeneralInitialScreenInformation(aapsLogger, danaPump)
+        val screenPacket = DanaRSPacketGeneralInitialScreenInformation(aapsLogger, danaPump, notificationManager)
         bleComm.sendMessage(screenPacket)
 
         assertThat(screenPacket.isReceived).isTrue()
@@ -380,7 +377,7 @@ class BLECommIntegrationTest : TestBase() {
     fun `bolusStart delivers bolus to emulator`() {
         connectAndHandshake()
 
-        val packet = DanaRSPacketBolusSetStepBolusStart(aapsLogger, danaPump, constraintsChecker)
+        val packet = DanaRSPacketBolusSetStepBolusStart(aapsLogger, danaPump)
             .with(amount = 2.5, speed = 0)
         bleComm.sendMessage(packet)
 
@@ -394,12 +391,12 @@ class BLECommIntegrationTest : TestBase() {
         connectAndHandshake()
 
         // Start a bolus first
-        val startPacket = DanaRSPacketBolusSetStepBolusStart(aapsLogger, danaPump, constraintsChecker)
+        val startPacket = DanaRSPacketBolusSetStepBolusStart(aapsLogger, danaPump)
             .with(amount = 1.0, speed = 0)
         bleComm.sendMessage(startPacket)
 
         // Stop the bolus
-        val stopPacket = DanaRSPacketBolusSetStepBolusStop(aapsLogger, BolusProgressData(ch, rh), rh, danaPump)
+        val stopPacket = DanaRSPacketBolusSetStepBolusStop(aapsLogger, BolusProgressData(ch, rh, CoroutineScope(Dispatchers.Unconfined)), rh, danaPump)
         bleComm.sendMessage(stopPacket)
 
         assertThat(stopPacket.isReceived).isTrue()
@@ -451,7 +448,7 @@ class BLECommIntegrationTest : TestBase() {
             .with(extendedAmount = 1.0, extendedBolusDurationInHalfHours = 2)
         bleComm.sendMessage(setPacket)
 
-        val screenPacket = DanaRSPacketGeneralInitialScreenInformation(aapsLogger, danaPump)
+        val screenPacket = DanaRSPacketGeneralInitialScreenInformation(aapsLogger, danaPump, notificationManager)
         bleComm.sendMessage(screenPacket)
 
         assertThat(screenPacket.isReceived).isTrue()
@@ -557,7 +554,7 @@ class BLECommIntegrationTest : TestBase() {
         assertThat(emulatorTransport.pumpState.isTempBasalRunning).isTrue()
 
         // Get initial screen (should reflect temp basal)
-        val screenPacket = DanaRSPacketGeneralInitialScreenInformation(aapsLogger, danaPump)
+        val screenPacket = DanaRSPacketGeneralInitialScreenInformation(aapsLogger, danaPump, notificationManager)
         bleComm.sendMessage(screenPacket)
         assertThat(screenPacket.isReceived).isTrue()
         assertThat(screenPacket.isTempBasalInProgress).isTrue()
@@ -588,7 +585,7 @@ class BLECommIntegrationTest : TestBase() {
         state.bolusStep = 0.05
 
         // 1. Initial screen info
-        val screen = DanaRSPacketGeneralInitialScreenInformation(aapsLogger, danaPump)
+        val screen = DanaRSPacketGeneralInitialScreenInformation(aapsLogger, danaPump, notificationManager)
         bleComm.sendMessage(screen)
         assertThat(screen.isReceived).isTrue()
         assertThat(danaPump.reservoirRemainingUnits).isWithin(0.01).of(100.0)

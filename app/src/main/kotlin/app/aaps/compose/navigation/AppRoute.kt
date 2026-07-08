@@ -18,6 +18,9 @@ sealed class AppRoute(val route: String) {
         fun createRoute(profileIndex: Int) = "profile_editor/$profileIndex"
     }
 
+    /** Editor opened for a brand-new, unpersisted profile draft (committed only when saved valid). */
+    data object ProfileEditorNew : AppRoute("profile_editor_new")
+
     data object ProfileActivation : AppRoute("profile_activation/{profileIndex}") {
 
         fun createRoute(profileIndex: Int) = "profile_activation/$profileIndex"
@@ -93,6 +96,7 @@ sealed class AppRoute(val route: String) {
         fun createRoute(pluginIndex: Int) = "plugin_content/$pluginIndex"
     }
 
+    data object AutomationList : AppRoute("automation_list")
     data object SceneList : AppRoute("scene_list")
     data object SceneWizard : AppRoute("scene_wizard?sceneId={sceneId}") {
 
@@ -119,6 +123,7 @@ sealed class AppRoute(val route: String) {
 
     data object FoodManagement : AppRoute("food_management")
     data object SiteRotationManagement : AppRoute("siteRotationManagement")
-    data object SiteRotationSettings : AppRoute("siteRotationSettings")
     data object SetupWizard : AppRoute("setup_wizard")
+    data object AuthorizedClients : AppRoute("authorized_clients")
+    data object PairWithMaster : AppRoute("pair_with_master")
 }

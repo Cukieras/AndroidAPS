@@ -7,10 +7,15 @@ import androidx.lifecycle.viewModelScope
 import app.aaps.core.data.model.GlucoseUnit
 import app.aaps.core.data.model.TE
 import app.aaps.core.data.time.T
-import app.aaps.core.data.ue.Action
 import app.aaps.core.data.ue.Sources
-import app.aaps.core.data.ue.ValueWithUnit
+import app.aaps.core.data.ui.ConfirmationLine
+import app.aaps.core.data.ui.ConfirmationRole
+import app.aaps.core.data.ui.confirmationLines
+import app.aaps.core.interfaces.bolus.BatchAction
+import app.aaps.core.interfaces.bolus.BatchExecutor
+import app.aaps.core.interfaces.clientcontrol.ActionProgress
 import app.aaps.core.interfaces.db.PersistenceLayer
+import app.aaps.core.interfaces.di.ApplicationScope
 import app.aaps.core.interfaces.iob.GlucoseStatusProvider
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
@@ -25,6 +30,7 @@ import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.ui.compose.siteRotation.BodyType
 import app.aaps.ui.R
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,6 +43,7 @@ import javax.inject.Inject
 class CareDialogViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val persistenceLayer: PersistenceLayer,
+    private val batchExecutor: BatchExecutor,
     private val profileFunction: ProfileFunction,
     private val profileUtil: ProfileUtil,
     private val glucoseStatusProvider: GlucoseStatusProvider,
@@ -44,7 +51,8 @@ class CareDialogViewModel @Inject constructor(
     private val preferences: Preferences,
     val rh: ResourceHelper,
     val dateUtil: DateUtil,
-    private val aapsLogger: AAPSLogger
+    private val aapsLogger: AAPSLogger,
+    @ApplicationScope private val appScope: CoroutineScope
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CareDialogUiState())
@@ -78,22 +86,20 @@ class CareDialogViewModel @Inject constructor(
         }
     }
 
-    private var siteRotationEntriesCache: List<TE> = emptyList()
-
     private fun loadLastSensorLocation() {
         viewModelScope.launch {
             try {
                 val allEntries = persistenceLayer.getTherapyEventDataFromTime(
                     dateUtil.now() - T.days(45).msecs(), false
                 ).filter { it.type == TE.Type.CANNULA_CHANGE || it.type == TE.Type.SENSOR_CHANGE }
-                siteRotationEntriesCache = allEntries
                 val lastEntry = allEntries
                     .filter { it.type == TE.Type.SENSOR_CHANGE && it.location != null && it.location != TE.Location.NONE }
                     .maxByOrNull { it.timestamp }
-                if (lastEntry != null) {
-                    _uiState.update {
-                        it.copy(lastSiteLocationString = translator.translate(lastEntry.location))
-                    }
+                _uiState.update {
+                    it.copy(
+                        siteRotationEntries = allEntries,
+                        lastSiteLocationString = if (lastEntry != null) translator.translate(lastEntry.location) else it.lastSiteLocationString
+                    )
                 }
             } catch (_: Exception) {
                 // ignore
@@ -116,7 +122,7 @@ class CareDialogViewModel @Inject constructor(
 
     fun bodyType(): BodyType = BodyType.fromPref(preferences.get(IntKey.SiteRotationUserProfile))
 
-    fun siteRotationEntries(): List<TE> = siteRotationEntriesCache
+    fun siteRotationEntries(): List<TE> = uiState.value.siteRotationEntries
 
     fun updateMeterType(meterType: TE.MeterType) {
         _uiState.update { it.copy(meterType = meterType) }
@@ -143,105 +149,102 @@ class CareDialogViewModel @Inject constructor(
 
     private var confirmedState: CareDialogUiState? = null
 
-    fun buildConfirmationSummary(): List<String> {
+    fun buildConfirmationSummary(): List<ConfirmationLine> {
         val state = uiState.value
         confirmedState = state
-        val lines = mutableListOf<String>()
+        return confirmationLines {
+            line(ConfirmationRole.NORMAL, rh.gs(R.string.confirm_treatment))
 
-        lines.add(rh.gs(R.string.confirm_treatment))
-
-        if (state.showBgSection) {
-            lines.add(rh.gs(R.string.glucose_type) + ": " + translator.translate(state.meterType))
-            val unitResId = if (state.glucoseUnits == GlucoseUnit.MGDL)
-                app.aaps.core.ui.R.string.mgdl else app.aaps.core.ui.R.string.mmol
-            lines.add(
-                rh.gs(app.aaps.core.ui.R.string.bg_label) + ": " +
-                    profileUtil.stringInCurrentUnitsDetect(state.bgValue) + " " +
+            if (state.showBgSection) {
+                line(
+                    ConfirmationRole.NORMAL,
+                    rh.gs(app.aaps.core.ui.R.string.confirmation_line, rh.gs(R.string.glucose_type), translator.translate(state.meterType))
+                )
+                val unitResId = if (state.glucoseUnits == GlucoseUnit.MGDL)
+                    app.aaps.core.ui.R.string.mgdl else app.aaps.core.ui.R.string.mmol
+                val bgWithUnit = rh.gs(
+                    app.aaps.core.ui.R.string.value_with_unit,
+                    profileUtil.stringInCurrentUnitsDetect(state.bgValue),
                     rh.gs(unitResId)
-            )
-        }
+                )
+                line(
+                    ConfirmationRole.PRIMARY,
+                    rh.gs(app.aaps.core.ui.R.string.confirmation_line, rh.gs(app.aaps.core.ui.R.string.bg_label), bgWithUnit)
+                )
+            }
 
-        if (state.showDurationSection) {
-            lines.add(
-                rh.gs(app.aaps.core.ui.R.string.duration_label) + ": " +
-                    rh.gs(app.aaps.core.ui.R.string.format_mins, state.duration.toInt())
-            )
-        }
+            if (state.showDurationSection) {
+                line(
+                    ConfirmationRole.NORMAL,
+                    rh.gs(
+                        app.aaps.core.ui.R.string.confirmation_line,
+                        rh.gs(app.aaps.core.ui.R.string.duration_label),
+                        rh.gs(app.aaps.core.ui.R.string.format_mins, state.duration.toInt())
+                    )
+                )
+            }
 
-        if (state.notes.isNotEmpty()) {
-            lines.add(rh.gs(app.aaps.core.ui.R.string.notes_label) + ": " + state.notes)
-        }
+            if (state.notes.isNotEmpty()) {
+                line(
+                    ConfirmationRole.NORMAL,
+                    rh.gs(app.aaps.core.ui.R.string.confirmation_line, rh.gs(app.aaps.core.ui.R.string.notes_label), state.notes)
+                )
+            }
 
-        if (state.eventTimeChanged) {
-            lines.add(rh.gs(app.aaps.core.ui.R.string.time) + ": " + dateUtil.dateAndTimeString(state.eventTime))
-        }
+            if (state.eventTimeChanged) {
+                line(
+                    ConfirmationRole.NORMAL,
+                    rh.gs(app.aaps.core.ui.R.string.confirmation_line, rh.gs(app.aaps.core.ui.R.string.time), dateUtil.dateAndTimeString(state.eventTime))
+                )
+            }
 
-        if (state.showSiteRotationSection && state.siteLocation != TE.Location.NONE) {
-            lines.add(rh.gs(app.aaps.core.ui.R.string.site_location) + ": " + translator.translate(state.siteLocation))
+            if (state.showSiteRotationSection && state.siteLocation != TE.Location.NONE) {
+                line(
+                    ConfirmationRole.NORMAL,
+                    rh.gs(app.aaps.core.ui.R.string.confirmation_line, rh.gs(app.aaps.core.ui.R.string.site_location), translator.translate(state.siteLocation))
+                )
+            }
         }
-
-        return lines
     }
 
     fun confirmAndSave() {
         val state = confirmedState ?: return
         val eventType = state.eventType
-
         val eventTime = state.eventTime - (state.eventTime % 1000)
 
         val isSensorChange = eventType == CareportalEventType.SENSOR_INSERT
         val location = if (isSensorChange) state.siteLocation.takeIf { it != TE.Location.NONE } else null
         val arrow = if (isSensorChange) state.siteArrow.takeIf { it != TE.Arrow.NONE } else null
 
-        val therapyEvent = TE(
+        // Route through the master via the client-control batch channel (RoleBranch): on a client a signed
+        // round-trip, on a master a local persist — the master is the SOLE writer (no local insert here; the event
+        // syncs back via NS treatments). On an OFFLINE client the batch is rejected (not queued), consistent with bolus/scene.
+        val action = BatchAction.TherapyEvent(
+            teType = eventType.toTEType(),
             timestamp = eventTime,
-            type = eventType.toTEType(),
-            glucoseUnit = state.glucoseUnits,
+            glucoseMgdl = if (state.showBgSection) profileUtil.convertToMgdl(state.bgValue, state.glucoseUnits) else null,
+            glucoseType = if (state.showBgSection) state.meterType else null,
+            durationMinutes = if (state.showDurationSection) state.duration.toInt() else 0,
+            note = state.notes.ifEmpty { null },
             location = location,
-            arrow = arrow
+            arrow = arrow,
+            source = eventType.toSource()
         )
+        val label = rh.gs(app.aaps.core.ui.R.string.careportal)
 
-        val valuesWithUnit = mutableListOf<ValueWithUnit?>()
+        // appScope, not viewModelScope: the screen navigates back immediately after confirm.
+        appScope.launch {
+            when (val prepared = batchExecutor.prepare(listOf(action), action.source, label)) {
+                is ActionProgress.Prepared -> {
+                    val committed = batchExecutor.commit(prepared.id, action.source, label)
+                    if (committed is ActionProgress.Rejected)
+                        aapsLogger.warn(LTag.UI, "Therapy event rejected: ${committed.reason} ${committed.detail}")
+                }
 
-        if (state.showBgSection) {
-            therapyEvent.glucoseType = state.meterType
-            therapyEvent.glucose = state.bgValue
-            valuesWithUnit.add(ValueWithUnit.fromGlucoseUnit(state.bgValue, state.glucoseUnits))
-            valuesWithUnit.add(ValueWithUnit.TEMeterType(state.meterType))
-        }
-
-        if (state.showDurationSection) {
-            therapyEvent.duration = T.mins(state.duration.toLong()).msecs()
-            valuesWithUnit.add(
-                ValueWithUnit.Minute(state.duration.toInt()).takeIf { state.duration != 0.0 }
-            )
-        }
-
-        if (state.notes.isNotEmpty()) {
-            therapyEvent.note = state.notes
-        }
-
-        therapyEvent.enteredBy = "AAPS"
-
-        val source = eventType.toSource()
-
-        valuesWithUnit.add(0, ValueWithUnit.Timestamp(eventTime).takeIf { state.eventTimeChanged })
-        valuesWithUnit.add(1, ValueWithUnit.TEType(therapyEvent.type))
-
-        viewModelScope.launch {
-            try {
-                persistenceLayer.insertPumpTherapyEventIfNewByTimestamp(
-                    therapyEvent = therapyEvent,
-                    action = Action.CAREPORTAL,
-                    source = source,
-                    note = state.notes,
-                    listValues = valuesWithUnit.filterNotNull()
-                )
-            } catch (e: Exception) {
-                aapsLogger.error(LTag.UI, "Failed to save therapy event", e)
+                is ActionProgress.Rejected -> aapsLogger.warn(LTag.UI, "Therapy event prepare rejected: ${prepared.reason}")
+                else                       -> Unit
             }
         }
-
     }
 
     private fun CareportalEventType.toTEType(): TE.Type = when (this) {

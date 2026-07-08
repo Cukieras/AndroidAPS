@@ -49,7 +49,7 @@ class BgQualityCheckPlugin @Inject constructor(
 
     private var disposable: CompositeDisposable = CompositeDisposable()
 
-    override fun onStart() {
+    override suspend fun onStart() {
         super.onStart()
         disposable += rxBus
             .toObservable(EventBucketedDataCreated::class.java)
@@ -57,7 +57,7 @@ class BgQualityCheckPlugin @Inject constructor(
             .subscribe({ processBgData() }, fabricPrivacy::logException)
     }
 
-    override fun onStop() {
+    override suspend fun onStop() {
         super.onStop()
         disposable.clear()
     }
@@ -77,6 +77,15 @@ class BgQualityCheckPlugin @Inject constructor(
             maxIob.set(0.0, "Limiting max IOB to 0 U due to doubled values in BG Source", this)
         else
             maxIob
+
+    // Surface the doubled-BG maxIOB=0 fallback as LGS mode in the UI.
+    // The maxIOB clamp above still applies (e.g. in open loop); this additionally flips the
+    // running mode to CLOSED_LOOP_LGS via LoopPlugin.runningModePreCheck() when in closed loop.
+    override fun isLgsForced(value: Constraint<Boolean>): Constraint<Boolean> =
+        if (state == BgQualityCheck.State.DOUBLED)
+            value.set(true, rh.gs(R.string.bg_doubled_lgs), this)
+        else
+            value
 
     fun processBgData() {
         val readings = iobCobCalculator.ads.getBgReadingsDataTableCopy()

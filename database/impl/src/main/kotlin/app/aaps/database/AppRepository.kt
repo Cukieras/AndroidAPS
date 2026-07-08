@@ -1,9 +1,12 @@
 package app.aaps.database
 
-import androidx.room.withTransaction
+import android.os.StatFs
+import androidx.room.Transactor.SQLiteTransactionType
+import androidx.room.useWriterConnection
 import app.aaps.database.entities.APSResult
 import app.aaps.database.entities.Bolus
 import app.aaps.database.entities.BolusCalculatorResult
+import app.aaps.database.entities.CalibrationEntry
 import app.aaps.database.entities.Carbs
 import app.aaps.database.entities.DeviceStatus
 import app.aaps.database.entities.EffectiveProfileSwitch
@@ -23,36 +26,43 @@ import app.aaps.database.entities.data.NewEntries
 import app.aaps.database.entities.embedments.InterfaceIDs
 import app.aaps.database.entities.interfaces.DBEntry
 import app.aaps.database.transactions.Transaction
-import io.reactivex.rxjava3.core.Observable
-import io.reactivex.rxjava3.schedulers.Schedulers
 import io.reactivex.rxjava3.subjects.PublishSubject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.Closeable
+import java.io.File
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToInt
+
+/** Module-local carrier for [AppRepository.databaseMaintenanceInfo]; mapped to `DatabaseMaintenanceInfo`. */
+data class DatabaseMaintenanceRaw(
+    val dbSizeBytes: Long,
+    val availableBytes: Long,
+    val totalRows: Long,
+    val deletableRows: Long,
+    val changeRows: Long,
+    val report: String
+)
 
 @Singleton
 class AppRepository @Inject internal constructor(
     internal val database: AppDatabase
 ) : Closeable {
 
-    // ========== RXJAVA SUPPORT (EXISTING) ==========
     private val changeSubject = PublishSubject.create<List<DBEntry>>()
-
-    fun changeObservable(): Observable<List<DBEntry>> = changeSubject.subscribeOn(Schedulers.io())
-
-    // ========== FLOW SUPPORT (NEW) ==========
 
     /**
      * Coroutine scope for Flow emissions
@@ -69,13 +79,13 @@ class AppRepository @Inject internal constructor(
     private val _changeFlow = MutableSharedFlow<List<DBEntry>>(
         replay = 0,
         extraBufferCapacity = 64,
-        onBufferOverflow = kotlinx.coroutines.channels.BufferOverflow.DROP_OLDEST
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
 
     private val _databaseClearedFlow = MutableSharedFlow<Unit>(
         replay = 0,
         extraBufferCapacity = 1,
-        onBufferOverflow = kotlinx.coroutines.channels.BufferOverflow.DROP_OLDEST
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
 
     /**
@@ -100,17 +110,26 @@ class AppRepository @Inject internal constructor(
      * Emits to BOTH RxJava (existing) AND Flow (new)
      */
     suspend fun <T> runTransactionSuspend(transaction: Transaction<T>) {
-        val changes = mutableListOf<DBEntry>()
-        database.withTransaction {
-            transaction.database = DelegatedAppDatabase(changes, database)
-            transaction.run()
-        }
-        // Emit to RxJava (existing) - for backwards compatibility
-        changeSubject.onNext(changes)
+        // The COMMIT and its change-notification must be one atomic, uninterruptible unit. If the
+        // caller (e.g. a WorkManager worker being stopped by Doze/standby/resource pressure) is
+        // cancelled in the window between the SQLite COMMIT and the emit below, the row would be
+        // durably persisted while observers (loop/overview/sync via observeChanges) never fire —
+        // a silently dropped reading with no loop run. NonCancellable closes that window.
+        withContext(NonCancellable) {
+            val changes = mutableListOf<DBEntry>()
+            database.useWriterConnection { connection ->
+                connection.withTransaction(SQLiteTransactionType.IMMEDIATE) {
+                    transaction.database = DelegatedAppDatabase(changes, database)
+                    transaction.run()
+                }
+            }
+            // Emit to RxJava (existing) - for backwards compatibility
+            changeSubject.onNext(changes)
 
-        // Emit to Flow (new)
-        if (changes.isNotEmpty()) {
-            _changeFlow.emit(changes)
+            // Emit to Flow (new)
+            if (changes.isNotEmpty()) {
+                _changeFlow.emit(changes)
+            }
         }
     }
 
@@ -119,21 +138,29 @@ class AppRepository @Inject internal constructor(
      * Uses Room's suspend withTransaction API for proper coroutine support
      * Emits to BOTH RxJava (existing) AND Flow (new)
      */
-    suspend fun <T : Any> runTransactionForResultSuspend(transaction: Transaction<T>): T {
-        val changes = mutableListOf<DBEntry>()
-        val result = database.withTransaction {
-            transaction.database = DelegatedAppDatabase(changes, database)
-            transaction.run()
-        }
-        // Emit to RxJava (existing) - for backwards compatibility
-        changeSubject.onNext(changes)
+    suspend fun <T : Any> runTransactionForResultSuspend(transaction: Transaction<T>): T =
+        // The COMMIT and its change-notification must be one atomic, uninterruptible unit. If the
+        // caller (e.g. a WorkManager worker being stopped by Doze/standby/resource pressure) is
+        // cancelled in the window between the SQLite COMMIT and the emit below, the row would be
+        // durably persisted while observers (loop/overview/sync via observeChanges) never fire —
+        // a silently dropped reading with no loop run. NonCancellable closes that window.
+        withContext(NonCancellable) {
+            val changes = mutableListOf<DBEntry>()
+            val result = database.useWriterConnection { connection ->
+                connection.withTransaction(SQLiteTransactionType.IMMEDIATE) {
+                    transaction.database = DelegatedAppDatabase(changes, database)
+                    transaction.run()
+                }
+            }
+            // Emit to RxJava (existing) - for backwards compatibility
+            changeSubject.onNext(changes)
 
-        // Emit to Flow (new)
-        if (changes.isNotEmpty()) {
-            _changeFlow.emit(changes)
+            // Emit to Flow (new)
+            if (changes.isNotEmpty()) {
+                _changeFlow.emit(changes)
+            }
+            result
         }
-        return result
-    }
 
     fun clearDatabases() {
         database.clearAllTables()
@@ -143,6 +170,7 @@ class AppRepository @Inject internal constructor(
     fun clearApsResults() = database.apsResultDao.deleteAllEntries()
 
     suspend fun cleanupDatabase(keepDays: Long, deleteTrackedChanges: Boolean): String {
+        database.useWriterConnection { connection -> connection.usePrepared("PRAGMA optimize") { it.step() } }
         val than = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(keepDays)
         val removed = mutableListOf<Pair<String, Int>>()
         removed.add(Pair("APSResult", database.apsResultDao.deleteOlderThan(than)))
@@ -197,7 +225,75 @@ class AppRepository @Inject internal constructor(
         removed
             .filter { it.second > 0 }
             .forEach { ret.append(it.first + " " + it.second + "<br>") }
+        // VACUUM is intentionally NOT run here. It is memory heavy and crashed (SQLITE_NOMEM) when
+        // it overlapped live DB activity; defragmenting VACUUM now runs only at startup while the
+        // DB is quiescent (see vacuumDatabase / MainApp.vacuumDatabaseIfDue).
+        database.useWriterConnection { connection -> connection.usePrepared("PRAGMA wal_checkpoint(TRUNCATE)") { it.step() } }
         return ret.toString()
+    }
+
+    /**
+     * Full VACUUM: defragments the DB file and returns free pages to the OS. Heavy and memory
+     * intensive, so call only when nothing else is using the DB (e.g. at app startup before
+     * plugins/loop/sync start). [cleanupDatabase] only deletes; this reclaims and defragments.
+     * May throw if the DB is busy/locked; callers must handle that and treat only a clean return
+     * as success.
+     */
+    suspend fun vacuumDatabase() {
+        database.useWriterConnection { connection ->
+            connection.usePrepared("PRAGMA wal_checkpoint(TRUNCATE)") { it.step() }
+            connection.usePrepared("VACUUM") { it.step() }
+        }
+    }
+
+    /**
+     * Read-only diagnostics gathered before a startup VACUUM (sizes, free space, aggregate row
+     * counts and a human-readable per-table report). Tables are discovered from `sqlite_master`, and
+     * every count is independent and failure-tolerant (missing column → -1), so a schema quirk can
+     * never break logging. Returned as a module-local type because `database:impl` does not depend on
+     * `core:interfaces`; [app.aaps.database.persistence] maps it to `DatabaseMaintenanceInfo`.
+     */
+    suspend fun databaseMaintenanceInfo(retentionDays: Long): DatabaseMaintenanceRaw {
+        val cutoff = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(retentionDays)
+        return database.useWriterConnection { connection ->
+            suspend fun count(sql: String): Long =
+                try {
+                    connection.usePrepared(sql) { if (it.step()) it.getLong(0) else 0L }
+                } catch (_: Throwable) {
+                    -1L
+                }
+
+            // Driver mode has no openHelper.path, so resolve the file from PRAGMA database_list.
+            var path = ""
+            connection.usePrepared("PRAGMA database_list") { stmt ->
+                while (stmt.step()) if (stmt.getText(1) == "main") path = stmt.getText(2)
+            }
+            val dbFile = File(path)
+            val dbSize = dbFile.length() + File("$path-wal").length() + File("$path-shm").length()
+            val available = dbFile.parent?.let { runCatching { StatFs(it).availableBytes }.getOrDefault(-1L) } ?: -1L
+
+            val tables = mutableListOf<String>()
+            connection.usePrepared(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE 'room_%' AND name != 'android_metadata' ORDER BY name"
+            ) { stmt -> while (stmt.step()) tables.add(stmt.getText(0)) }
+
+            val sb = StringBuilder()
+            sb.append("file=${dbFile.name} size=${dbSize / 1024}KB free=${if (available < 0) "?" else "${available / 1_048_576}MB"} tables=${tables.size}\n")
+            var totRows = 0L
+            var totOld = 0L
+            var totChanges = 0L
+            for (t in tables) {
+                val all = count("SELECT COUNT(*) FROM `$t`")
+                val old = count("SELECT COUNT(*) FROM `$t` WHERE timestamp < $cutoff")
+                val changes = count("SELECT COUNT(*) FROM `$t` WHERE referenceId IS NOT NULL")
+                if (all > 0) totRows += all
+                if (old > 0) totOld += old
+                if (changes > 0) totChanges += changes
+                sb.append("  $t total=$all old=$old changes=$changes\n")
+            }
+            sb.append("TOTAL rows=$totRows deletable(>${retentionDays}d)=$totOld changes=$totChanges")
+            DatabaseMaintenanceRaw(dbSize, available, totRows, totOld, totChanges, sb.toString())
+        }
     }
 
     suspend fun clearCachedTddData(from: Long) = database.totalDailyDoseDao.deleteNewerThan(from, InterfaceIDs.PumpType.CACHE)
@@ -233,6 +329,30 @@ class AppRepository @Inject internal constructor(
             nextIdElement to nextIdElement
         } else {
             val historic = database.glucoseValueDao.getCurrentFromHistoric(nextIdElemReferenceId) ?: return null
+            historic to nextIdElement
+        }
+    }
+
+    // CALIBRATION ENTRIES
+    suspend fun getLastCalibrationEntryId(): Long? =
+        database.calibrationEntryDao.getLastId()
+
+    suspend fun getValidCalibrationEntriesSince(from: Long): List<CalibrationEntry> =
+        database.calibrationEntryDao.getValidSince(from)
+
+    suspend fun getAllValidCalibrationEntries(): List<CalibrationEntry> =
+        database.calibrationEntryDao.getAllValid()
+
+    suspend fun findCalibrationEntryByNSId(nsId: String): CalibrationEntry? =
+        database.calibrationEntryDao.findByNSId(nsId)
+
+    suspend fun getNextSyncElementCalibrationEntry(id: Long): Pair<CalibrationEntry, CalibrationEntry>? {
+        val nextIdElement = database.calibrationEntryDao.getNextModifiedOrNewAfter(id) ?: return null
+        val nextIdElemReferenceId = nextIdElement.referenceId
+        return if (nextIdElemReferenceId == null) {
+            nextIdElement to nextIdElement
+        } else {
+            val historic = database.calibrationEntryDao.getCurrentFromHistoric(nextIdElemReferenceId) ?: return null
             historic to nextIdElement
         }
     }

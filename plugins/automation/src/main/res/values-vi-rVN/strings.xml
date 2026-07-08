@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="automation_short">Auto</string>
-    <string name="automation">Automation</string>
-    <string name="automation_description">Các tác vụ tự động do người dùng định nghĩa</string>
+    <string name="automation">Tự động</string>
     <string name="automation_enabled">Đã bật</string>
     <string name="automation_read_only">Chỉ đọc</string>
     <string name="automation_new_rule">Quy tắc mới</string>
+    <string name="automation_empty_desc">Tạo quy tắc để tự động thực hiện các hành động dựa trên điều kiện kích hoạt.</string>
     <string name="automation_edit_rule">Sửa quy tắc</string>
     <string name="automation_discard_title">Huỷ bỏ thay đổi?</string>
     <string name="automation_discard_message">Quy tắc chưa hoàn chỉnh và không thể lưu. Bạn có muốn hủy các thay đổi không?</string>
@@ -48,12 +47,11 @@
     <string name="notification_message">Thông báo: %1$s</string>
     <string name="profilename">Chuyển Cấu hình sang</string>
     <string name="changengetoprofilename">Chuyển Cấu hình sang %1$s</string>
-    <string name="automation_trigger_pump_last_connection_label">Kết nối gần nhất đến bơm</string>
-    <string name="automation_trigger_pump_last_connection_compared">Lần kết nối gần nhất với bơm %1$s %2$s phút trước</string>
+    <string name="automation_trigger_pump_last_connection_label">Kết nối mới nhất đến bơm</string>
+    <string name="automation_trigger_pump_last_connection_compared">Lần kết nối mới nhất với bơm %1$s %2$s phút trước</string>
     <string name="alreadyset">Đã thiết lập</string>
     <string name="profilepercentage">Tỷ lệ phần trăm Cấu hình</string>
     <string name="startprofileforever">Bắt đầu Cấu hình %1$d%%</string>
-    <string name="percent_u">Tỷ lệ [%]:</string>
     <string name="sendsmsactionlabel">Gửi SMS: %1$s</string>
     <string name="sendsmsactiondescription">Gửi SMS đến tất cả các số</string>
     <string name="sendsmsactiontext">Gửi SMS với nội dung</string>

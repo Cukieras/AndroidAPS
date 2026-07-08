@@ -16,7 +16,7 @@
     <string name="description_ama">算法的状态在2017年</string>
     <string name="description_smb">最新的适合高级用户的算法</string>
     <string name="description_smb_dynamic_isf">面向高级用户的最新算法，可以动态/自动调整ISF胰岛素敏感系数</string>
-    <string name="description_auto_isf">针对高级用户的最新算法，带有自动 ISF胰岛素敏感系数扩展</string>
+    <string name="description_auto_isf">面向高级用户的试验性算法，包含 AutoISF 扩展功能</string>
     <string name="openapsma_last_run_label">上一次运行</string>
     <string name="openapsma_input_parameters_label">输入参数</string>
     <string name="openapsma_glucose_status_label">血糖状态</string>
@@ -40,7 +40,7 @@
     <string name="maxvalueinpreferences">在参数选项里的最大值</string>
     <string name="hardlimit">硬限制</string>
     <!--    Autotune   -->
-    <string name="insulin_peak">峰值</string>
+    <string name="autotune_peak">峰值</string>
     <!--    Loop -->
     <string name="smb_frequency_exceeded">在最近3分钟内输注了大剂量，正在忽略SMB微型大剂量</string>
     <string name="pump_not_initialized">泵未初始化!</string>

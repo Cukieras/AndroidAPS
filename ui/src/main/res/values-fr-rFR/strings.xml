@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="carbs_constraint_applied">Restriction de bolus appliquée</string>
+    <string name="cancel_action_with_details" comment="%1$s=the word Cancel, %2$s=the active item being cancelled (e.g. a running temp basal or extended bolus description). Example: 'Cancel 150% 30min'">%1$s %2$s</string>
     <string name="no_temp_basal_running">Pas basal temp en cours</string>
-    <string name="temp_target_short">CT</string>
     <string name="start_activity_tt">Début Activités</string>
     <string name="start_eating_soon_tt">Début Repas Imminent</string>
     <string name="start_hypo_tt">Début Traitement Hypo</string>
@@ -12,6 +11,7 @@
     <string name="widget_description">Widget AAPS</string>
     <string name="widget_bg_graph_description">Graphique Gly. AAPS</string>
     <string name="widget_compact_bg_description">AAPS Gly + IA + GA (compact)</string>
+    <string name="widget_small_description">AAPS petit</string>
     <!--     Activities-->
     <string name="activity_monitor">Moniteur d\'activité</string>
     <string name="time_range">Plage horaire</string>
@@ -41,14 +41,6 @@
     <string name="bg_sensor">Capteur</string>
     <!-- WizardDialog -->
     <!-- SiteRotationDialog -->
-    <string name="site_man">Homme</string>
-    <string name="site_woman">Femme</string>
-    <string name="site_child">Enfant</string>
-    <string name="user_profile">Profil utilisateur</string>
-    <string name="user_profile_description">La description du profil utilisateur est utilisée pour montrer les sites les plus fréquents disponibles pour un homme, une femme ou un enfant</string>
-    <string name="site_management">Paramètres de gestion du site</string>
-    <string name="site_management_description">Sélectionnez si vous souhaitez gérer le site de la pompe, le site MGC ou les deux. Ce paramètre permettra d\'ouvrir automatiquement la boîte de dialogue de gestion du site à chaque nouvelle entrée détectée</string>
-    <string name="update_site_change">Mettre à jour la localisation du site</string>
     <string name="edit_site">Éditer</string>
     <string name="record_site_location">Site : %1$s</string>
     <string name="record_site_arrow">Flèche : %1$s</string>
@@ -136,29 +128,32 @@
     <!-- Insulin Management -->
     <string name="missing_insulin_name">Nom de l\'insuline manquant</string>
     <string name="insulin_name_exists">Le nom d\'insuline %1$s existe déjà, sélectionnez un nouveau nom</string>
+    <string name="insulin_external_update_title">L\'insuline a changé</string>
+    <string name="insulin_external_update_message">Un client jumelé a modifié l\'insuline. Appuyez sur OK pour charger leurs modifications et supprimer vos modifications non enregistrées, ou sur Annuler pour continuer à modifier (votre prochaine sauvegarde écrasera la leur).</string>
+    <string name="insulin_edit_target_gone">Cette insuline a été supprimée ailleurs, votre modification n\'a donc pas pu être enregistrée. La liste a été rechargée.</string>
+    <string name="insulin_activation_applied">Activation de l\'insuline appliquée</string>
+    <!-- Client→master round-trip pending dialog -->
+    <string name="clientcontrol_pending_working_title">Application…</string>
+    <string name="clientcontrol_pending_working_text">En attente que le maître confirme…</string>
+    <string name="clientcontrol_pending_rejected_title">Non appliqué</string>
+    <string name="clientcontrol_pending_failed_format">%1$s n\'a pas pu être fait.\n%2$s</string>
+    <!-- Partial success (e.g. a scene chained but some of the target\'s actions failed) — not a rejection -->
+    <string name="clientcontrol_pending_partial_title">Partiellement appliqué</string>
+    <!-- %1$s = action label -->
+    <string name="clientcontrol_pending_partial_format">%1$s a été appliqué, mais certaines actions n\'ont pas pu l\'être.\nVérifiez l\'état actif.</string>
+    <string name="clientcontrol_pending_unconfirmed_title">Échec de la confirmation</string>
+    <!-- %1$s = action label, %2$s = reason. Sent but unconfirmed → will reconcile via sync-back -->
+    <string name="clientcontrol_pending_unconfirmed_format">%1$s a été envoyé, mais aucune confirmation n\'est revenue.\n%2$s\nIl apparaîtra ici si/quand le maître l\'applique.</string>
+    <string name="clientcontrol_pending_stop_waiting">Arrêter d\'attendre</string>
     <string name="a11y_add_new_insulin">Ajouter une nouvelle insuline</string>
     <string name="a11y_delete_current_insulin">Supprimer l\'insuline actuelle</string>
-    <string name="activate_insulin_no_profile">Aucun profil actif trouvé</string>
-    <string name="activate_insulin_new_insulin">Nouvelle insuline : %1$s</string>
-    <string name="activate_insulin_remaining">Restant : %1$d min</string>
-    <string name="activate_insulin_profile_switch">Un changement de profil sera créé :\n\n<b>%1$s</b></string>
     <string name="load_peak_from">Charger le pic depuis</string>
     <string name="cannot_delete_last_insulin">Impossible de supprimer la dernière insuline</string>
     <string name="cannot_delete_active_insulin">Impossible de supprimer l\'insuline active</string>
     <string name="reuse_profile_pct_hours">Réutiliser %1$d%% %2$dh</string>
-    <string name="timeshift_label">Décalage horaire</string>
     <string name="percentage_label">Pourcentage</string>
     <!-- LoopDialog -->
-    <string name="suspendloopfor1h">Suspendre la boucle pendant 1h</string>
-    <string name="suspendloopfor2h">Suspendre la boucle pendant 2h</string>
-    <string name="suspendloopfor3h">Suspendre la boucle pendant 3h</string>
-    <string name="suspendloopfor10h">Suspendre la boucle pendant 10h</string>
     <string name="disconnectpump">Déconnecter la pompe</string>
-    <string name="disconnectpumpfor15m">Déconnecter la pompe pendant 15 min</string>
-    <string name="disconnectpumpfor30m">Déconnecter la pompe pendant 30 min</string>
-    <string name="disconnectpumpfor1h">Déconnecter la pompe pendant 1 h</string>
-    <string name="disconnectpumpfor2h">Déconnecter la pompe 2 h</string>
-    <string name="disconnectpumpfor3h">Déconnecter la pompe pendant 3 h</string>
     <string name="resume">Reprendre</string>
     <string name="reconnect">Reconnecter la pompe</string>
     <string name="duration15m">15 min</string>
@@ -189,6 +184,7 @@
     <string name="active_profile_indicator">ACTIF</string>
     <string name="confirm_remove_profile">Supprimer le profil \"%1$s\" ?</string>
     <string name="confirm_clone_profile">Cloner le profil \"%1$s\" ?</string>
+    <string name="profile_no_longer_exists">La liste des profils a changé entre-temps — veuillez réessayer</string>
     <string name="tbr_type_flag_extended">E</string>
     <string name="tbr_type_flag_suspended">S</string>
     <string name="tbr_type_flag_emulated_suspended">ES</string>
@@ -290,8 +286,6 @@
     <string name="quick_launch_no_profiles">Créez des profils dans le gestionnaire de profils pour les utiliser ici</string>
     <string name="quick_launch_edit_profile_preset">Modifier le préréglage du profil</string>
     <string name="quick_launch_profile_permanent">Permanent</string>
-    <string name="quick_launch_profile_confirm_pct">%1$d%%</string>
-    <string name="quick_launch_profile_confirm_dur">%1$d min</string>
     <string name="select_arrow">Sélectionner flèche</string>
     <string name="loop_accept_nav_label">Boucle</string>
     <string name="loop_accept_set_basal_question">Accepter nouveau Basal Temp :</string>
@@ -301,4 +295,15 @@
     <string name="widget_rm_disabled">Désactivé</string>
     <string name="widget_rm_suspended">Suspendu</string>
     <string name="widget_rm_resume">Reprendre</string>
+    <!-- Calibration entry rejection reasons -->
+    <string name="cal_reject_delta_too_high">Calibration non sauvegardée : la glycémie change trop vite (Δ %1$s %3$s par 5 min, limite %2$s). Réessayez lorsque la glycémie est stable.</string>
+    <string name="cal_reject_no_pair">Calibration non sauvegardée : aucune lecture MGC trouvée dans les 10 minutes précédentes.</string>
+    <string name="cal_reject_warmup">Calibration non sauvegardée : le capteur est toujours dans la fenêtre pré-chauffage de 2 heures.</string>
+    <string name="cal_reject_no_session">Calibration non enregistrée: aucune session de capteur n\'est active. Effectuez d\'abord un changement de capteur.</string>
+    <!-- Calibration preflight messages shown in the dialog before submit -->
+    <string name="cal_precheck_warmup">Capteur toujours en échauffement. Calibration disponible à %1$s.</string>
+    <string name="cal_precheck_no_session">Aucune session de capteur n\'est active.</string>
+    <string name="cal_precheck_no_pair">Aucune lecture MGC au cours des 10 dernières minutes. Vérifiez la connexion du capteur.</string>
+    <string name="cal_precheck_delta_too_high">La glycémie change trop vite (Δ %1$s %3$s par 5 min, limite %2$s). Attendez que ce soit stabe.</string>
+    <string name="cal_precheck_mark_sensor_change">Enregistrer le changement de capteur</string>
 </resources>

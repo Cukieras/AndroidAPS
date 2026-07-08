@@ -11,7 +11,7 @@ import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.rx.bus.RxBus
 import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.keys.interfaces.Preferences
-import app.aaps.plugins.sync.nsclient.ReceiverDelegate
+import app.aaps.plugins.sync.nsclientV3.ReceiverDelegate
 import app.aaps.plugins.sync.tidepool.auth.AuthFlowOut
 import app.aaps.plugins.sync.tidepool.events.EventTidepoolStatus
 import app.aaps.plugins.sync.tidepool.keys.TidepoolBooleanKey
@@ -131,7 +131,8 @@ class TidepoolUploader @Inject constructor(
 
         // Check if already in a connected or connecting state
         if (authFlowOut.connectionStatus == AuthFlowOut.ConnectionStatus.SESSION_ESTABLISHED ||
-            authFlowOut.connectionStatus == AuthFlowOut.ConnectionStatus.FETCHING_TOKEN) {
+            authFlowOut.connectionStatus == AuthFlowOut.ConnectionStatus.FETCHING_TOKEN
+        ) {
             aapsLogger.debug(LTag.TIDEPOOL, "Already connected or connecting")
             return
         }
@@ -176,9 +177,14 @@ class TidepoolUploader @Inject constructor(
         session?.let { session ->
             if (session.authReply?.userid != null) {
                 // See if we already have an open data set to write to
+                // Must match the client.name the dataset is CREATED with (OpenDatasetRequestMessage -> ClientInfo(config.APPLICATION_ID)).
+                // A hardcoded "AAPS" here never matched config.APPLICATION_ID ("info.nightscout.androidaps"), so the existing open
+                // dataset was never found and a new dataset (new uploadId) was opened on every session. Because the Tidepool
+                // dataset.delete.origin deduplicator is scoped to a single uploadId, prior syncs' data could never be replaced,
+                // so every full sync duplicated all data. Reusing one dataset lets the per-uploadId origin dedup collapse re-uploads.
                 val datasetCall = session.service?.getOpenDataSets(
                     session.token!!,
-                    session.authReply!!.userid!!, "AAPS", 1
+                    session.authReply!!.userid!!, config.APPLICATION_ID, 1
                 )
                 datasetCall?.enqueue(
                     TidepoolCallback<List<DatasetReplyMessage>>(

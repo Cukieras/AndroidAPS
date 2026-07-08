@@ -29,11 +29,8 @@
     <string name="failed_update_basal_profile">Actualizarea profilului bazalei a eșuat</string>
     <string name="no_valid_basal_rate">Nu s-a citit o rată bazală validă din pompă</string>
     <string name="limiting_iob">Se limitează IOB la %1$.1f U datorită %2$s</string>
-    <string name="loop_disabled">BUCLĂ DEZACTIVATĂ DE CONSTRÂNGERI</string>
     <string name="loop_disabled_by_user">Bucla dezactivată de utilizator</string>
     <string name="event_type">Tip eveniment</string>
-    <string name="mgdl">mg/dl</string>
-    <string name="mmol">mmol/l</string>
     <string name="save">Salvați</string>
     <string name="skip">Omiteți</string>
     <string name="switch_to_edit">Editați</string>
@@ -53,11 +50,9 @@
     <string name="configbuilder_pick_one_hint">Alegeți unul. Doar unul poate fi activ odată.</string>
     <string name="configbuilder_pick_many_hint">Alegeți oricare care se potrivește.</string>
     <string name="configbuilder_no_selection_warning">Nu este selectat niciun modul în această categorie.</string>
-    <string name="simple_mode">Mod simplu</string>
     <string name="expand">Extindeți</string>
     <string name="collapse">Restrângeți</string>
     <string name="no_compose_preferences">Nu există preferințe de compunere disponibile pentru acest modul</string>
-    <string name="plugin_no_preferences">Modulul nu acceptă preferințe</string>
     <string name="confirm_password_hint">Confirmați parola</string>
     <string name="confirm_pin_hint">Confirmați codul PIN</string>
     <string name="preference_range_summary" comment="%1$s=current value, %2$s=unit label, %3$s=minimum, %4$s=maximum. Example: 5.0 U (0.0 – 10.0)">%1$s%2$s (%3$s – %4$s)</string>
@@ -66,6 +61,7 @@
     <string name="configbuilder_insulin">Insulină</string>
     <string name="configbuilder_bgsource">Sursă glicemie</string>
     <string name="configbuilder_smoothing">Netezire</string>
+    <string name="configbuilder_calibration">Calibrare</string>
     <string name="configbuilder_pump">Pompă</string>
     <string name="configbuilder_sensitivity">Detectare sensibilitate</string>
     <string name="configbuilder_aps">APS</string>
@@ -89,7 +85,6 @@
     <string name="mute">Mut</string>
     <string name="success">Succes</string>
     <string name="advanced_settings_title">Setări avansate</string>
-    <string name="extendedbolusdeliveryerror">Eroare administrare bolus extins</string>
     <string name="extended_bolus">Bolus extins</string>
     <string name="paused">Suspendat</string>
     <string name="running">Se rulează</string>
@@ -100,7 +95,6 @@
     <string name="formatsignedinsulinunits">%1$+.2f U</string>
     <string name="format_carbs">%1$d g</string>
     <string name="format_hours">%1$.2f h</string>
-    <string name="format_mins">%1$d min</string>
     <string name="objectives">Obiective</string>
     <string name="please_wait">Așteptați…</string>
     <string name="stop">Stop</string>
@@ -249,7 +243,6 @@
     <string name="basalprofilenotaligned">Valori bazale nesincronizate cu ora: %1$s</string>
     <string name="minimalbasalvaluereplaced">Valoarea bazalei a fost înlocuită cu valoarea minimă posibilă: %1$s</string>
     <string name="maximumbasalvaluereplaced">Valoarea bazalei a fost înlocuită cu valoarea maximă posibilă: %1$s</string>
-    <string name="profile_per_unit">/U</string>
     <string name="profile_ins_units_per_hour">U/h</string>
     <string name="profile_carbs_per_unit">g/U</string>
     <!--    ProfileFunction-->
@@ -339,7 +332,7 @@
     <string name="scene_conflict_active_running_mode">Modul de funcționare activ va fi înlocuit</string>
     <string name="scene_conflict_active_scene">Scenariul activa \"%1$s\" se va încheia primul</string>
     <string name="scene_action_tt">Țintă temporară: %1$s</string>
-    <string name="scene_action_profile">Profil: %1$s %2$d%%</string>
+    <string name="scene_action_profile" comment="%1$s=profile name, %2$d=percentage. Example: Profile: Default 150%">Profil: %1$s %2$d%%</string>
     <string name="scene_action_smb_on">Activați SMB</string>
     <string name="scene_action_smb_off">Dezactivați SMB</string>
     <string name="scene_action_running_mode">Mod de funcționare: %1$s</string>
@@ -348,7 +341,6 @@
     <string name="scene_management_desc">Creați, editați și gestionați scene</string>
     <string name="scene_action_count">%1$d acțiuni</string>
     <string name="scene_start_from_template">Porniți de la șablon</string>
-    <string name="scene_editor_reason">Motiv</string>
     <string name="scene_editor_target">Țintă</string>
     <string name="scene_editor_tt_preset">Presetare țintă temporară</string>
     <string name="scene_editor_no_tt_presets">Nicio presetare configurată de țintă temporară</string>
@@ -370,6 +362,8 @@
     <string name="scene_no_profile_store">Niciun spațiu de stocare pentru profiluri disponibil</string>
     <string name="scene_no_actions">Scenariul nu are acțiuni</string>
     <string name="scene_profile_not_found">Profilul \"%1$s\" nu a fost găsit</string>
+    <!-- Client-control action labels (shown in the pending/failure modal as "Couldn't {label}") -->
+    <!-- Client-control failure reasons (mapped from a FailureReason code on the showing device) -->
     <string name="scene_revert_tt">Anulați ținta temporară</string>
     <string name="scene_revert_profile">Reveniți la profilul de dinainte de schimbare</string>
     <string name="scene_revert_smb_on">Reactivați SMB</string>
@@ -431,7 +425,6 @@
     <string name="activation">Activare</string>
     <string name="temp_target_management">Țintă temporară</string>
     <string name="revert_to_defaults">Reveniți la valorile implicite</string>
-    <string name="confirm_cancel_temp_target">Anulați ținta activă temporară?</string>
     <string name="loop">Buclă</string>
     <string name="ns">NS</string>
     <string name="record">Înregistrare</string>
@@ -470,6 +463,7 @@
     <string name="arrow_center">Centru</string>
     <!--    Command-->
     <string name="connectiontimedout">Conexiunea a expirat</string>
+    <string name="command_replaced">Înlocuit de comanda mai nouă</string>
     <string name="pump_not_configured">Pompa nu este configurată</string>
     <!--    PumpEnactResult-->
     <string name="enacted">Executat</string>
@@ -532,6 +526,7 @@
     <string name="uel_tt_ns_refresh">ACTUALIZARE NS TINTE TEMPORARE</string>
     <string name="uel_automation_removed">AUTOMATIZARE ȘTEARSĂ</string>
     <string name="uel_bg_removed">GLICEMIE ELIMINATĂ</string>
+    <string name="uel_calibration_removed">CALIBRARE ELIMINATĂ</string>
     <string name="uel_careportal_removed">CAREPORTAL ELIMINAT</string>
     <string name="uel_bolus_removed">BOLUS ELIMINAT</string>
     <string name="uel_carbs_removed">CARBOHIDRAȚI ELIMINAȚI</string>
@@ -612,7 +607,6 @@
     <string name="no_profile_selected">Niciun profil selectat</string>
     <string name="missing_profile_name">Lipsește numele profilului</string>
     <string name="profile_not_saved_activate">Profilul nu a fost salvat. Vă rugăm să salvați profilul înainte de activare.</string>
-    <string name="profile_activation_failed">Activarea profilului a eşuat</string>
     <string name="error_in_ic_values">Eroare în valorile IC</string>
     <string name="error_in_isf_values">Eroare în valorile ISF</string>
     <string name="error_in_basal_values">Eroare în valorile ratei bazale</string>
@@ -646,7 +640,10 @@
     <string name="basal">Rate bazale</string>
     <string name="basalpct">Bazală %</string>
     <string name="sensitivity">Sensibilitate</string>
-    <string name="isf_for_carbs">ISF pentru Calculator și Absorbția Carbohidraților: %1$.1f</string>
+    <string name="isf_for_carbs">Media ISF pentru calculator și absorbția carbohidraților: %1$.1f</string>
+    <string name="isf_profile">Profil ISF: %1$.1f</string>
+    <string name="isf_variable">ISF variabil: %1$.1f</string>
+    <string name="isf_effective">ISF efectiv: %1$.1f</string>
     <string name="autosens_long">Valoare Autosens: %.0f%%</string>
     <string name="autosens_short">%.0f%%</string>
     <string name="algorithm_long">Autosens în algoritm: %.0f%%</string>
@@ -687,25 +684,12 @@
     <string name="wizard_include_cob">Includeți COB</string>
     <string name="wizard_calculation">Calcul</string>
     <string name="no_action_selected">Nicio acțiune selectată, nu se va întâmpla nimic</string>
-    <string name="carb_equal_zero_no_action">Carbohidrați = 0. Nicio acțiune efectuată!</string>
-    <string name="bolus_equal_zero_no_action">Bolus = 0. Nicio acțiune întreprinsă!</string>
     <string name="wizard_no_insulin_required">Nu este necesară insulină</string>
     <string name="wizard_no_actual_bg">Nicio glicemie recentă pe care să se bazeze calculul!</string>
     <string name="wizard_no_active_profile">Niciun profil activ stabilit!</string>
-    <string name="wizard_no_cob">COB necunoscut! Lipsesc datele de glicemie sau aplicația a fost repornită de curând?</string>
     <string name="wizard_carbs_constraint">Limite carbohidrați încălcate!</string>
-    <string name="wizard_explain_calc">Calc (IC: %1$.1f, ISF: %2$.1f)</string>
-    <string name="wizard_explain_carbs">Carbohidrați: %1$.2fU</string>
-    <string name="wizard_explain_cob">COB: %1$.0fg %2$.2fU</string>
-    <string name="wizard_explain_bg">Glicemie: %1$.2fU</string>
-    <string name="wizard_explain_iob">IOB: %1$.2fU</string>
-    <string name="wizard_explain_superbolus">Superbolus: %1$.2fU</string>
-    <string name="wizard_explain_trend">Tendința la 15\': %1$.2fU</string>
     <string name="wizard_trend_detail">Tendință 15 minute (%1$s %2$s)</string>
-    <string name="wizard_explain_percent">Procentaj: %1$.2fU x %2$d%% ≈ %3$.2fU</string>
     <string name="wizard_constraint_bolus_size">Încălcare constrângere insulină!\nNu se pot administra %1$.2fU</string>
-    <string name="wizard_explain_tt">BazalaT.: %1$s</string>
-    <string name="wizard_explain_tt_to">Între %1$s și %2$s</string>
     <string name="wizard_pump_not_available">Nicio pompă disponibilă!</string>
     <string name="quickwizard_managemnt">Asistent Rapid</string>
     <!--    Preferences-->
@@ -828,7 +812,6 @@
     <string name="reauthorize">Reautentificați-vă</string>
     <string name="cloud_auth_success">Autentificare reușită în stocarea din cloud</string>
     <string name="authorization_status">Stare autorizare</string>
-    <string name="format_hour_minute">%1$dh %2$dm</string>
     <!-- datetime layout -->
     <string name="event_time_label">Ora evenimentului</string>
     <!-- BluetoothDevicePreference -->
@@ -875,7 +858,6 @@
     <string name="reorder">Reordonați</string>
     <string name="status">Stare</string>
     <string name="pump_actions">Acțiuni pompă</string>
-    <string name="tempbasal_button">Bazală temporară</string>
     <string name="extended_bolus_button">Bolus extins</string>
     <string name="device_maintenance">Întreținerea dispozitivului</string>
     <string name="from_label">De la</string>
@@ -1027,6 +1009,4 @@
     <string name="sensitivity_shortname" comment="Short label for Sensitivity/Autosens graph series">SENS%</string>
     <string name="variable_sensitivity_shortname" comment="Short label for Variable Sensitivity graph series">VSENS</string>
     <string name="steps_shortname" comment="Short label for Steps graph series">PAȘI</string>
-    <string name="remove_items">Eliminați elementele</string>
-    <string name="sort_items">Sortați elementele</string>
 </resources>

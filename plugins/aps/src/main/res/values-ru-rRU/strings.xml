@@ -16,7 +16,6 @@
     <string name="description_ama">Состояние алгоритма в 2017 году</string>
     <string name="description_smb">Самый новый алгоритм для опытных пользователей</string>
     <string name="description_smb_dynamic_isf">Последний алгоритм для опытных пользователей с динамическим/автоматическим ISF</string>
-    <string name="description_auto_isf">Новейший алгоритм для опытных пользователей с динамическим изменением чувствительности к инсулину ISF</string>
     <string name="openapsma_last_run_label">Предыдущее выполнение</string>
     <string name="openapsma_input_parameters_label">Параметры ввода</string>
     <string name="openapsma_glucose_status_label">Состояние гликемии</string>
@@ -40,7 +39,6 @@
     <string name="maxvalueinpreferences">максимальное значение в настройках</string>
     <string name="hardlimit">жесткий предел</string>
     <!--    Autotune   -->
-    <string name="insulin_peak">Пик</string>
     <!--    Loop -->
     <string name="smb_frequency_exceeded">Болюс был подан в течение последних трех минут, минуя супер микро болюс SMB</string>
     <string name="pump_not_initialized">Помпа не инициализирована!</string>

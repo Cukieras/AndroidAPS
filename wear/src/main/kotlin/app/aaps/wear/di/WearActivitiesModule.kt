@@ -5,6 +5,7 @@ import app.aaps.wear.interaction.ConfigurationActivity
 import app.aaps.wear.interaction.WatchfaceConfigurationActivity
 import app.aaps.wear.tile.ActionsTileSettingsActivity
 import app.aaps.wear.tile.BgGraphTileSettingsActivity
+import app.aaps.wear.tile.SceneTileSettingsActivity
 import app.aaps.wear.tile.TempTargetTileSettingsActivity
 import app.aaps.wear.interaction.actions.AcceptActivity
 import app.aaps.wear.interaction.actions.BackgroundActionActivity
@@ -18,7 +19,6 @@ import app.aaps.wear.interaction.actions.QuickSnoozeActivity
 import app.aaps.wear.interaction.actions.TempTargetActivity
 import app.aaps.wear.interaction.actions.TreatmentActivity
 import app.aaps.wear.interaction.actions.WizardActivity
-import app.aaps.wear.interaction.actions.WizardResultActivity
 import app.aaps.wear.interaction.activities.BgGraphActivity
 import app.aaps.wear.interaction.activities.LoopStatusActivity
 import app.aaps.wear.interaction.menus.FillMenuActivity
@@ -36,6 +36,7 @@ abstract class WearActivitiesModule {
     @ContributesAndroidInjector abstract fun contributesActionsTileSettingsActivity(): ActionsTileSettingsActivity
     @ContributesAndroidInjector abstract fun contributesTempTargetTileSettingsActivity(): TempTargetTileSettingsActivity
     @ContributesAndroidInjector abstract fun contributesBgGraphTileSettingsActivity(): BgGraphTileSettingsActivity
+    @ContributesAndroidInjector abstract fun contributesSceneTileSettingsActivity(): SceneTileSettingsActivity
     @ContributesAndroidInjector abstract fun contributesConfigurationActivity(): ConfigurationActivity
     @ContributesAndroidInjector abstract fun contributesWatchfaceConfigurationActivity(): WatchfaceConfigurationActivity
     @ContributesAndroidInjector abstract fun contributesComplicationTapActivity(): ComplicationTapActivity
@@ -51,7 +52,6 @@ abstract class WearActivitiesModule {
     @ContributesAndroidInjector abstract fun contributesTempTargetActivity(): TempTargetActivity
     @ContributesAndroidInjector abstract fun contributesTreatmentActivity(): TreatmentActivity
     @ContributesAndroidInjector abstract fun contributesWizardActivity(): WizardActivity
-    @ContributesAndroidInjector abstract fun wizardResultActivity(): WizardResultActivity
 
     @ContributesAndroidInjector abstract fun contributesFillMenuActivity(): FillMenuActivity
     @ContributesAndroidInjector abstract fun contributesPreferenceMenuActivity(): PreferenceMenuActivity

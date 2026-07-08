@@ -79,6 +79,7 @@ data class UserEntry(
         TT_NS_REFRESH,
         AUTOMATION_REMOVED,
         BG_REMOVED,
+        CALIBRATION_REMOVED,
         CAREPORTAL_REMOVED,
         EXTENDED_BOLUS_REMOVED,
         FOOD_REMOVED,
@@ -126,6 +127,7 @@ data class UserEntry(
         RUNNING_MODE_UPDATED,
         SCENE_ACTIVATED,
         SCENE_DEACTIVATED,
+        REMOTE_CONFIG_CHANGED,
         UNKNOWN
         ;
     }

@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.aaps.core.ui.compose.ExcludeFromJacocoGeneratedReport
 import app.aaps.core.ui.compose.banner.ErrorBanner
 import app.aaps.core.ui.compose.dialogs.OkDialog
 import app.aaps.core.ui.compose.pump.WizardButton
@@ -132,12 +133,6 @@ internal fun PrepareStepContent(
                     text = stringResource(R.string.patch_begin_activation).stripHtml(),
                     style = MaterialTheme.typography.bodyLarge
                 )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = stringResource(R.string.patch_not_active_note),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error
-                )
             }
 
             PrepareState.CONNECTING,
@@ -184,6 +179,7 @@ internal fun PrepareStepContent(
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview(showBackground = true, name = "Prepare - Initial")
 @Composable
 private fun PreviewInitial() {
@@ -195,6 +191,7 @@ private fun PreviewInitial() {
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview(showBackground = true, name = "Prepare - Filled")
 @Composable
 private fun PreviewFilled() {
@@ -203,6 +200,7 @@ private fun PreviewFilled() {
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview(showBackground = true, name = "Prepare - Error")
 @Composable
 private fun PreviewError() {

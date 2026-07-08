@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.documentfile.provider.DocumentFile
 import androidx.fragment.app.FragmentActivity
+import androidx.hilt.work.HiltWorker
 import androidx.lifecycle.lifecycleScope
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
@@ -50,9 +51,11 @@ import app.aaps.core.interfaces.ui.UiInteraction
 import app.aaps.core.interfaces.userEntry.UserEntryPresentationHelper
 import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.interfaces.utils.MidnightTime
+import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
 import app.aaps.core.keys.BooleanNonKey
 import app.aaps.core.keys.StringKey
 import app.aaps.core.keys.interfaces.Preferences
+import app.aaps.core.objects.crypto.CryptoUtil
 import app.aaps.core.objects.extensions.asSettingsExport
 import app.aaps.core.objects.workflow.LoggingWorker
 import app.aaps.core.utils.receivers.DataInbox
@@ -67,6 +70,8 @@ import app.aaps.implementation.maintenance.data.PrefsStatusImpl
 import app.aaps.implementation.maintenance.formats.EncryptedPrefsFormat
 import app.aaps.shared.impl.weardata.ZipWatchfaceFormat
 import dagger.Reusable
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -105,7 +110,8 @@ class ImportExportPrefsImpl @Inject constructor(
     @ApplicationScope private val appScope: CoroutineScope,
     private val cloudStorageManager: CloudStorageManager,
     private val userEntryPresentationHelper: UserEntryPresentationHelper,
-    private val storage: Storage
+    private val storage: Storage,
+    private val cryptoUtil: CryptoUtil
 ) : ImportExportPrefs {
 
     private var pendingExportFile: DocumentFile? = null
@@ -114,6 +120,13 @@ class ImportExportPrefsImpl @Inject constructor(
 
     override fun isMasterPasswordSet(): Boolean =
         !preferences.getIfExists(StringKey.ProtectionMasterPassword).isNullOrEmpty()
+
+    // Settings encryption must use the master password: verify the entered password against the stored
+    // master hash. The Compose export path previously accepted (and cached, for unattended exports) any password.
+    override fun isMasterPasswordCorrect(password: String): Boolean {
+        val masterHash = preferences.getIfExists(StringKey.ProtectionMasterPassword)
+        return !masterHash.isNullOrEmpty() && cryptoUtil.checkPassword(password, masterHash)
+    }
 
     override fun getExportConfig(): ExportConfig {
         val isCloudActive = cloudStorageManager.isCloudStorageActive()
@@ -843,7 +856,7 @@ class ImportExportPrefsImpl @Inject constructor(
                     if (bytes != null) {
                         val content = String(bytes, Charsets.UTF_8)
                         val metadata = encryptedPrefsFormat.loadMetadata(content)
-                        prefsFiles.add(PrefsFile(file.name, content, metadata))
+                        prefsFiles.add(PrefsFile(file.name, content, metadata, id = file.id))
                     }
                 } catch (e: Exception) {
                     aapsLogger.warn(LTag.CORE, "Failed to load cloud file ${file.name}", e)
@@ -851,7 +864,7 @@ class ImportExportPrefsImpl @Inject constructor(
                         val bytes = provider.downloadFile(file.id)
                         if (bytes != null) {
                             val content = String(bytes, Charsets.UTF_8)
-                            prefsFiles.add(PrefsFile(file.name, content, emptyMap()))
+                            prefsFiles.add(PrefsFile(file.name, content, emptyMap(), id = file.id))
                         }
                     } catch (e2: Exception) {
                         aapsLogger.error(LTag.CORE, "Failed to download ${file.name}", e2)
@@ -986,19 +999,21 @@ class ImportExportPrefsImpl @Inject constructor(
         }
     }
 
-    class CsvExportWorker(
-        private val context: Context,
-        params: WorkerParameters
-    ) : LoggingWorker(context, params, Dispatchers.IO) {
-
-        @Inject lateinit var rh: ResourceHelper
-        @Inject lateinit var prefFileList: FileListProvider
-        @Inject lateinit var userEntryPresentationHelper: UserEntryPresentationHelper
-        @Inject lateinit var storage: Storage
-        @Inject lateinit var persistenceLayer: PersistenceLayer
-        @Inject lateinit var cloudStorageManager: CloudStorageManager
-        @Inject lateinit var preferences: Preferences
-        @Inject lateinit var rxBus: RxBus
+    @HiltWorker
+    class CsvExportWorker @AssistedInject constructor(
+        @Assisted private val context: Context,
+        @Assisted params: WorkerParameters,
+        aapsLogger: AAPSLogger,
+        fabricPrivacy: FabricPrivacy,
+        private val rh: ResourceHelper,
+        private val prefFileList: FileListProvider,
+        private val userEntryPresentationHelper: UserEntryPresentationHelper,
+        private val storage: Storage,
+        private val persistenceLayer: PersistenceLayer,
+        private val cloudStorageManager: CloudStorageManager,
+        private val preferences: Preferences,
+        private val rxBus: RxBus
+    ) : LoggingWorker(context, params, Dispatchers.IO, aapsLogger, fabricPrivacy) {
 
         override suspend fun doWorkAndLog(): Result {
             aapsLogger.info(LTag.CORE, "${CloudConstants.LOG_PREFIX} CSV_EXPORT doWorkAndLog started")
@@ -1124,15 +1139,17 @@ class ImportExportPrefsImpl @Inject constructor(
         dataInbox.putAndEnqueue(ApsExportInbox, ApsResultExportWorker.ApsResultData(algorithm, input, output))
     }
 
-    class ApsResultExportWorker(
-        context: Context,
-        params: WorkerParameters
-    ) : LoggingWorker(context, params, Dispatchers.IO) {
-
-        @Inject lateinit var prefFileList: FileListProvider
-        @Inject lateinit var storage: Storage
-        @Inject lateinit var config: Config
-        @Inject lateinit var dataInbox: DataInbox
+    @HiltWorker
+    class ApsResultExportWorker @AssistedInject constructor(
+        @Assisted context: Context,
+        @Assisted params: WorkerParameters,
+        aapsLogger: AAPSLogger,
+        fabricPrivacy: FabricPrivacy,
+        private val prefFileList: FileListProvider,
+        private val storage: Storage,
+        private val config: Config,
+        private val dataInbox: DataInbox
+    ) : LoggingWorker(context, params, Dispatchers.IO, aapsLogger, fabricPrivacy) {
 
         data class ApsResultData(val algorithm: String?, val input: JSONObject, val output: JSONObject?)
 

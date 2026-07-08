@@ -2,6 +2,10 @@
 <resources>
     <string name="error_field_must_not_be_empty">Trường này không được để trống</string>
     <string name="error_mustbe4hexadidits">Phải gồm 4 ký tự trong tập ABCDEF0123456789</string>
+    <string name="authorized_clients_manage_label">Thiết bị được ủy quyền</string>
+    <string name="authorized_clients_manage_desc">Quản lý các thiết bị phụ đã ghép đôi được phép điều khiển thiết bị chính này.</string>
+    <string name="pair_with_master_manage_label">Ghép đôi với thiết bị chính</string>
+    <string name="pair_with_master_manage_desc">Nhập mã PIN ghép đôi của thiết bị chính để cho phép thiết bị phụ này gửi các lệnh đã ký xác thực.</string>
     <!--    General-->
     <string name="treatments">Điều trị</string>
     <string name="treatments_history">Lịch sử điều trị</string>
@@ -16,6 +20,7 @@
     <string name="refresh">Làm mới</string>
     <string name="no_history_records">Không tìm thấy bản ghi nào</string>
     <string name="error">Lỗi</string>
+    <string name="navigation_error_screen_not_found">Không thể mở màn hình này (không khả dụng trong cấu hình cài đặt hiện tại)</string>
     <string name="profile_set_ok">Đã cập nhật cấu hình liều nền trong bơm</string>
     <string name="invalid_input">Dữ liệu đầu vào không hợp lệ</string>
     <string name="invalid_number">Số không hợp lệ</string>
@@ -29,11 +34,14 @@
     <string name="failed_update_basal_profile">Không thể cập nhật cấu hình liều nền</string>
     <string name="no_valid_basal_rate">Không đọc được liều basal hợp lệ từ bơm</string>
     <string name="limiting_iob">Giới hạn IOB: %1$.1f U – Lý do: %2$s.</string>
-    <string name="loop_disabled">VÒNG LẶP BỊ TẮT DO GIỚI HẠN AN TOÀN</string>
     <string name="loop_disabled_by_user">Vòng lặp đã bị người dùng tắt</string>
     <string name="event_type">Loại sự kiện</string>
     <string name="mgdl">mg/dl</string>
-    <string name="mmol">mmol/l</string>
+    <string name="mmol">mmol/L</string>
+    <string name="profile_isf_units_mgdl">mg/dL/U</string>
+    <string name="profile_isf_units_mmol">mmol/L/U</string>
+    <string name="bg_mgdl">%1$d mg/dL</string>
+    <string name="bg_mmol">%1$.1f mmol/L</string>
     <string name="save">Lưu</string>
     <string name="skip">Bỏ qua</string>
     <string name="switch_to_edit">Sửa</string>
@@ -53,11 +61,9 @@
     <string name="configbuilder_pick_one_hint">Hãy chọn một. Chỉ một cái có thể hoạt động tại một thời điểm.</string>
     <string name="configbuilder_pick_many_hint">Chọn tất cả mục phù hợp.</string>
     <string name="configbuilder_no_selection_warning">Chưa có plugin nào được chọn trong danh mục này.</string>
-    <string name="simple_mode">Chế độ đơn giản</string>
     <string name="expand">Mở rộng</string>
     <string name="collapse">Thu gọn</string>
     <string name="no_compose_preferences">Plugin này không có cài đặt Compose</string>
-    <string name="plugin_no_preferences">Plugin không hỗ trợ cài đặt</string>
     <string name="confirm_password_hint">Xác nhận mật khẩu</string>
     <string name="confirm_pin_hint">Xác nhận mã PIN</string>
     <string name="preference_range_summary" comment="%1$s=current value, %2$s=unit label, %3$s=minimum, %4$s=maximum. Example: 5.0 U (0.0 – 10.0)">%1$s%2$s (%3$s – %4$s)</string>
@@ -66,6 +72,7 @@
     <string name="configbuilder_insulin">Insulin</string>
     <string name="configbuilder_bgsource">Nguồn Đường huyết</string>
     <string name="configbuilder_smoothing">Làm mượt</string>
+    <string name="configbuilder_calibration">Hiệu chuẩn</string>
     <string name="configbuilder_pump">Bơm Insulin</string>
     <string name="configbuilder_sensitivity">Phát hiện độ nhạy insulin</string>
     <string name="configbuilder_aps">APS</string>
@@ -89,7 +96,6 @@
     <string name="mute">Im lặng</string>
     <string name="success">Thành công</string>
     <string name="advanced_settings_title">Cài đặt nâng cao</string>
-    <string name="extendedbolusdeliveryerror">Tiêm liều Bolus kéo dài thất bại</string>
     <string name="extended_bolus">Liều Bolus kéo dài</string>
     <string name="paused">Đã tạm dừng</string>
     <string name="running">Đang chạy</string>
@@ -99,9 +105,12 @@
     <string name="androidaps_start">AAPS đã khởi động</string>
     <string name="formatsignedinsulinunits">%1$+.2f U</string>
     <string name="format_carbs">%1$d g</string>
+    <string name="format_carbs_split" comment="Compact carbs summary when a food type splits the entry into immediate + extended carbs. %1$d=immediate carbs (g), %2$d=extended (eCarbs) carbs (g). Example: 9+2 g">%1$d+%2$d g</string>
     <string name="format_hours">%1$.2f h</string>
-    <string name="format_mins">%1$d mins</string>
-    <string name="objectives">Mục tiêu</string>
+    <string name="format_mins">%1$d phút</string>
+    <string name="confirmation_line" comment="Confirmation-summary line, joins a label and an already-formatted value. %1$s = label, %2$s = value with its unit. Example: Bolus: 1.50 U">%1$s: %2$s</string>
+    <string name="value_with_unit" comment="A numeric value followed by its unit, when no dedicated value template exists. %1$s = value, %2$s = unit. Example: 120 mg/dl">%1$s %2$s</string>
+    <string name="objectives">Mục tiêu học tập</string>
     <string name="please_wait">Vui lòng chờ…</string>
     <string name="stop">Dừng lại</string>
     <string name="stop_pressed">Đã nhấn DỪNG</string>
@@ -133,7 +142,7 @@
     <string name="loopisdisabled">Vòng lặp bị vô hiệu hóa</string>
     <string name="alarm">Báo thức</string>
     <string name="exportsettings">Xuất Cài đặt</string>
-    <string name="disableloop">Vô hiệu hóa vòng lặp</string>
+    <string name="disableloop">Tắt vòng lặp</string>
     <string name="disabled_loop">Vô hiệu hóa vòng lặp</string>
     <string name="resumeloop">Khởi động lại vòng lặp</string>
     <string name="suspendloop">Tạm dừng vòng lặp</string>
@@ -187,6 +196,8 @@
     <string name="reset">Đặt lại</string>
     <string name="profileswitch_ismissing">Thiếu Chuyển đổi Cấu hình. Vui lòng thực hiện chuyển đổi cấu hình hoặc nhấn “Kích hoạt cấu hình” trong cấu hình cục bộ.</string>
     <string name="profile">Cấu hình</string>
+    <string name="percentage_label">Phần trăm</string>
+    <string name="timeshift_label">Dịch chuyển thời gian</string>
     <string name="confirm_remove_multiple_items">Bạn có chắc chắn muốn xóa %1$d mục không</string>
     <string name="overview_treatment_label">Điều trị</string>
     <string name="copytolocalprofile">Tạo cấu hình mới từ cấu hình này không?</string>
@@ -210,7 +221,7 @@
     <string name="stoptemptarget">Dừng mục tiêu tạm thời</string>
     <string name="closedloop">Vòng lặp kín</string>
     <string name="openloop">Vòng lặp mở</string>
-    <string name="lowglucosesuspend">Tạm ngừng khi đường huyết thấp</string>
+    <string name="lowglucosesuspend">Tạm dừng khi BG Thấp</string>
     <string name="pump_disconnected">Bơm đã ngắt kết nối</string>
     <string name="pump_suspended">Bơm đã tạm ngưng</string>
     <string name="pump_suspend">Tạm dừng bơm</string>
@@ -239,6 +250,7 @@
     <string name="engineering_mode_enabled">Chế độ bảo trì đã được bật</string>
     <string name="back">Quay lại</string>
     <string name="next">Tiếp theo</string>
+    <string name="pref_syncs_with_main_phone">Đồng bộ với điện thoại chính</string>
     <string name="show_hide_records">Ẩn các bản ghi vòng lặp</string>
     <!--    Protection-->
     <string name="wrongpassword">Sai mật khẩu</string>
@@ -249,7 +261,6 @@
     <string name="basalprofilenotaligned">Giá trị liều nền không khớp với giờ: %1$s</string>
     <string name="minimalbasalvaluereplaced">Giá trị liều nền đã được thay bằng giá trị tối thiểu được hỗ trợ: %1$s</string>
     <string name="maximumbasalvaluereplaced">Giá trị liều nền đã được thay bằng giá trị tối đa được hỗ trợ: %1$s</string>
-    <string name="profile_per_unit">/U</string>
     <string name="profile_ins_units_per_hour">U/h</string>
     <string name="profile_carbs_per_unit">g/U</string>
     <!--    ProfileFunction-->
@@ -291,26 +302,26 @@
     <!--    Temptarget-->
     <string name="mins">%1$d phút</string>
     <!--    Translator-->
-    <string name="careportal">Careportal</string>
+    <string name="careportal">Thông tin điều trị</string>
     <string name="careportal_bgcheck">Kiểm tra BG</string>
     <string name="careportal_mbg">Đường huyết nhập tay hoặc hiệu chuẩn</string>
     <string name="careportal_announcement">Thông báo</string>
     <string name="careportal_settings_export">Xuất cài đặt</string>
     <string name="careportal_note">Ghi chú</string>
     <string name="careportal_question">Câu hỏi</string>
-    <string name="careportal_exercise">Bài tập luyện</string>
+    <string name="careportal_exercise">Tập thể dục</string>
     <string name="careportal_announcement_message">Thông báo: %1$s</string>
-    <string name="careportal_note_message">Ghi chú: %1$s</string>
+    <string name="careportal_note_message">Ghi chú : %1$s</string>
     <string name="careportal_question_message">Câu hỏi: %1$s</string>
     <string name="careportal_exercise_message">Bài tập luyện : %1$s</string>
-    <string name="careportal_pump_site_change">Thay vị trí truyền của bơm</string>
+    <string name="careportal_pump_site_change">Thay vị trí bơm</string>
     <string name="cgm_sensor_insert">Gắn cảm biến</string>
     <string name="careportal_pump_site_management">Vị trí tiêm</string>
     <string name="careportal_cgm_site_management">Vị trí CGM</string>
     <string name="careportal_cgmsensorstart">Khởi động Cảm biến</string>
     <string name="careportal_cgm_sensor_stop">Dừng cảm biến</string>
     <string name="careportal_dad_alert">Cảnh báo D.A.D</string>
-    <string name="careportal_insulin_cartridge_change">Thay ống chứa insulin</string>
+    <string name="careportal_insulin_cartridge_change">Thay bình chứa insulin</string>
     <string name="careportal_profileswitch">Chuyển cấu hình</string>
     <string name="profile_management">Cấu hình</string>
     <string name="careportal_snackbolus">Bolus bữa ăn nhẹ</string>
@@ -325,13 +336,16 @@
     <string name="temporary_target">Mục tiêu Tạm thời</string>
     <string name="temporary_targets">Mục tiêu tạm thời</string>
     <string name="running_mode">Chế độ đang chạy</string>
+    <string name="running_mode_change_not_allowed">Không thể thay đổi chế độ hoạt động</string>
+    <string name="pump_reconnect">Kết nối lại bơm</string>
     <string name="scene">Ngữ cảnh</string>
-    <string name="scenes">Các ngữ cảnh</string>
+    <string name="scenes">Ngữ cảnh</string>
     <string name="scene_desc">Thiết lập sẵn theo tình huống — kích hoạt nhiều hành động cùng lúc</string>
     <string name="scene_activate">Kích hoạt</string>
     <string name="scene_deactivate">Kết thúc ngữ cảnh</string>
     <string name="scene_active">Kích hoạt</string>
     <string name="scene_ended">Ngữ cảnh đã kết thúc</string>
+    <string name="scene_end_active">Tắt ngữ cảnh đang chạy</string>
     <string name="scene_confirm_activate">Kích hoạt ngữ cảnh “%1$s”?</string>
     <string name="scene_confirm_deactivate">Kết thúc ngữ cảnh “%1$s” và hoàn tác các thay đổi?</string>
     <string name="scene_conflict_active_tt">Mục tiêu tạm thời đang hoạt động sẽ được thay thế</string>
@@ -339,16 +353,16 @@
     <string name="scene_conflict_active_running_mode">Chế độ đang hoạt động sẽ được thay thế</string>
     <string name="scene_conflict_active_scene">Ngữ cảnh đang hoạt động “%1$s” sẽ được kết thúc trước</string>
     <string name="scene_action_tt">Mục tiêu tạm thời: %1$s</string>
-    <string name="scene_action_profile">Cấu hình: %1$s %2$d%%</string>
+    <string name="scene_action_profile" comment="%1$s=profile name, %2$d=percentage. Example: Profile: Default 150%">Cấu hình: %1$s %2$d%%</string>
+    <string name="scene_action_profile_pct_only" comment="%1$d=percentage, used when no specific named profile. Example: Profile: 150%">Cấu hình: %1$d%%</string>
     <string name="scene_action_smb_on">Kích hoạt SMB</string>
     <string name="scene_action_smb_off">Vô hiệu hóa SMBs</string>
     <string name="scene_action_running_mode">Chế độ đang chạy: %1$s</string>
     <string name="scene_action_careportal">Log: %1$s</string>
-    <string name="scene_management">Các ngữ cảnh</string>
+    <string name="scene_management">Ngữ cảnh</string>
     <string name="scene_management_desc">Tạo, chỉnh sửa và quản lý các ngữ cảnh</string>
     <string name="scene_action_count">%1$d hành động</string>
     <string name="scene_start_from_template">Bắt đầu từ mẫu</string>
-    <string name="scene_editor_reason">Lý do</string>
     <string name="scene_editor_target">Mục tiêu</string>
     <string name="scene_editor_tt_preset">Thiết lập sẵn TT</string>
     <string name="scene_editor_no_tt_presets">Chưa cấu hình thiết lập sẵn TT nào</string>
@@ -370,13 +384,49 @@
     <string name="scene_no_profile_store">Không có kho cấu hình khả dụng</string>
     <string name="scene_no_actions">Ngữ cảnh không có hành động nào</string>
     <string name="scene_profile_not_found">Không tìm thấy cấu hình “%1$s”</string>
+    <string name="scene_lock_banner_master_offline">Không thể kết nối với thiết bị chính. Các điều khiển kịch bản sẽ hoạt động trở lại khi kết nối được khôi phục.</string>
+    <string name="scene_lock_banner_control_disabled">Thiết bị chính đã tắt điều khiển từ xa. Chức năng điều khiển ngữ cảnh sẽ hoạt động trở lại khi tính năng này được bật lại trên thiết bị chính.</string>
+    <string name="master_offline_banner">Không thể kết nối với thiết bị chính. Không thể chỉnh sửa cho đến khi kết nối được khôi phục.</string>
+    <string name="master_control_disabled_banner">Thiết bị chính đã tắt điều khiển từ xa. Việc chỉnh sửa bị vô hiệu hóa cho đến khi tính năng này được bật lại trên thiết bị chính.</string>
+    <string name="scene_lock_reason_master_offline">Thiết bị chính đã ngắt kết nối</string>
+    <string name="scene_lock_reason_control_disabled">Điều khiển từ xa đã bị tắt</string>
+    <string name="scene_lock_reason_scene_active">Hãy dừng ngữ cảnh đang chạy trước</string>
+    <!-- Client-control action labels (shown in the pending/failure modal as "Couldn't {label}") -->
+    <string name="clientcontrol_action_set_temp_target">Thiết lập mục tiêu tạm thời</string>
+    <string name="clientcontrol_action_cancel_temp_target">Hủy mục tiêu tạm thời</string>
+    <string name="clientcontrol_action_activate_scene">Kích hoạt ngữ cảnh “%1$s”</string>
+    <string name="clientcontrol_action_deactivate_scene">Kết thúc ngữ cảnh</string>
+    <string name="clientcontrol_action_update_settings">Cập nhật cài đặt</string>
+    <string name="clientcontrol_action_deliver_bolus">Tiêm liều bolus</string>
+    <!-- Client-control failure reasons (mapped from a FailureReason code on the showing device) -->
+    <string name="clientcontrol_fail_not_paired">Thiết bị này chưa được ghép đôi với thiết bị chính.</string>
+    <string name="clientcontrol_fail_not_reachable">Thiết bị chính đang ngoại tuyến.</string>
+    <string name="clientcontrol_pump_out_of_sync" comment="Shown when a follower relays a temp basal / extended bolus but its cached pump type no longer matches the master\'s pump">Cấu hình bơm không đồng bộ với thiết bị chính. Vui lòng thử lại.</string>
+    <string name="clientcontrol_fail_no_reply">Không có phản hồi từ thiết bị chính trong thời gian quy định.</string>
+    <string name="clientcontrol_fail_expired">Lệnh đã hết hiệu lực trước khi được thiết bị chính áp dụng.</string>
+    <string name="clientcontrol_fail_busy">Một thao tác khác đang được thực hiện.</string>
+    <string name="clientcontrol_fail_send_failed">Không thể truy cập Nightscout.</string>
+    <string name="clientcontrol_fail_no_active_profile">Thiết bị chính không có cấu hình đang hoạt động để áp dụng thay đổi này.</string>
+    <string name="clientcontrol_fail_scene_not_found">Ngữ cảnh này không còn tồn tại.</string>
+    <string name="clientcontrol_fail_site_entry_not_found">Vị trí này không còn tồn tại.</string>
+    <string name="clientcontrol_fail_scene_disabled">Ngữ cảnh đã bị vô hiệu hóa.</string>
+    <string name="clientcontrol_fail_partial">Không thể áp dụng một số thao tác.</string>
+    <string name="clientcontrol_fail_execution">Thiết bị chính không thể áp dụng thay đổi này.</string>
+    <string name="clientcontrol_fail_control_disabled">Điều khiển từ xa đang bị tắt trên thiết bị chính.</string>
+    <string name="clientcontrol_fail_no_pending_bolus">Liều Bolus đã chuẩn bị đã hết hiệu lực hoặc bị thay thế. Hãy nhấn nút lại.</string>
+    <string name="clientcontrol_fail_bolus_compute">Thiết bị chính không thể tính toán bolus (thiếu dữ liệu đường huyết, cấu hình hoặc bơm chưa sẵn sàng).</string>
+    <string name="clientcontrol_fail_internal">Đã xảy ra lỗi.</string>
+    <string name="clientcontrol_fail_unknown">Không thể thực hiện lệnh.</string>
+    <string name="clientcontrol_unconfirmed_wear">Không xác định được trạng thái — hãy kiểm tra điện thoại/Nightscout trước khi bolus lại.</string>
+    <string name="clientcontrol_bolus_progress_stalled_title">Mất kết nối — không xác định được trạng thái phân phối insulin</string>
+    <string name="clientcontrol_bolus_progress_stalled_body">Điện thoại này đã ngừng nhận cập nhật từ thiết bị chính. Bolus có thể vẫn đang được phân phối hoặc đã hoàn tất. Đóng thông báo này chỉ ẩn nó trên thiết bị này — không dừng bơm. Hãy kiểm tra điện thoại chính để xem lượng insulin thực tế đã được phân phối.</string>
     <string name="scene_revert_tt">Hủy mục tiêu tạm thời</string>
     <string name="scene_revert_profile">Hoàn tác thay đổi cấu hình</string>
     <string name="scene_revert_smb_on">Bật lại SMB</string>
     <string name="scene_revert_smb_off">Vô hiệu hóa SMB</string>
     <string name="scene_revert_loop_mode">Hủy chế độ ghi đè đang chạy</string>
     <string name="scene_careportal_no_revert">Các mục nhập CarePortal sẽ không được hoàn tác</string>
-    <string name="careportal_sickness">Bệnh tật</string>
+    <string name="careportal_sickness">Bị ốm</string>
     <string name="careportal_stress">Căng thẳng</string>
     <string name="careportal_pre_period">Trước kỳ kinh</string>
     <string name="careportal_alcohol">Rượu bia</string>
@@ -401,7 +451,7 @@
     <string name="manage_temp_basal_desc">Bắt đầu liều nền tạm thời</string>
     <string name="manage_extended_bolus_desc">Bắt đầu liều bolus kéo dài</string>
     <string name="manage_site_rotation_desc">Theo dõi và luân chuyển vị trí truyền</string>
-    <string name="manage_quickwizard_desc">Quản lý các thiết lập sẵn của hướng dẫn nhanh</string>
+    <string name="manage_quickwizard_desc">Quản lý các thiết lập sẵn của trình hướng dẫn nhanh</string>
     <string name="treatment_note_desc">Thêm ghi chú vào hồ sơ</string>
     <string name="treatment_question_desc">Ghi lại câu hỏi cho nhóm chăm sóc của bạn</string>
     <string name="treatment_cgm_desc">Mở ứng dụng CGM</string>
@@ -425,13 +475,13 @@
     <string name="activity">Hoạt động</string>
     <string name="wear">Wear</string>
     <string name="automation">Tự động hóa</string>
+    <string name="automation_management_desc">Create rules that run actions automatically based on triggers</string>
     <string name="settingsexport">Xuất cài đặt</string>
     <string name="custom">Tuỳ chỉnh</string>
     <string name="preset_settings">Thiết lập cài đặt sẵn</string>
     <string name="activation">Kích hoạt</string>
     <string name="temp_target_management">Mục tiêu tạm thời</string>
     <string name="revert_to_defaults">Khôi phục về mặc định</string>
-    <string name="confirm_cancel_temp_target">Hủy mục tiêu tạm thời đang hoạt động?</string>
     <string name="loop">Vòng lặp</string>
     <string name="ns">NS</string>
     <string name="record">Record</string>
@@ -451,6 +501,8 @@
     <string name="location_front_left_lower_abdomen">Vùng bụng trái phía dưới, mặt trước</string>
     <string name="location_back_right_buttock">Mông phải</string>
     <string name="location_back_left_buttock">Mông trái</string>
+    <string name="location_back_right_lower_back">Vùng lưng dưới bên Phải</string>
+    <string name="location_back_left_lower_back">Vùng lưng dưới bên Trái</string>
     <string name="location_side_right_upper_thigh">Phần ngoài đùi phải phía trên</string>
     <string name="location_side_left_upper_thigh">Phần ngoài đùi trái phía trên</string>
     <string name="location_side_right_lower_thigh">Phần ngoài đùi phải phía dưới</string>
@@ -470,6 +522,7 @@
     <string name="arrow_center">Ở giữa</string>
     <!--    Command-->
     <string name="connectiontimedout">Hết thời gian kết nối</string>
+    <string name="command_replaced">Đã được thay thế bởi lệnh mới hơn</string>
     <string name="pump_not_configured">Bơm chưa được cấu hình</string>
     <!--    PumpEnactResult-->
     <string name="enacted">Đã kích hoạt</string>
@@ -518,7 +571,7 @@
     <string name="uel_cancel_bolus">HỦY LIỀU BOLUS</string>
     <string name="uel_cancel_extended_bolus">HỦY LIỀU BOLUS KÉO DÀI</string>
     <string name="uel_cancel_tt">CANCEL TEMP TARGET</string>
-    <string name="uel_careportal">CAREPORTAL</string>
+    <string name="uel_careportal">THÔNG TIN ĐIỀU TRỊ</string>
     <string name="uel_sensor_location">VỊ TRÍ CẢM BIẾN</string>
     <string name="uel_site_change">THAY ĐIỂM GẮN</string>
     <string name="uel_site_location">SITE LOCATION</string>
@@ -526,13 +579,14 @@
     <string name="uel_calibration">CALIBRATION</string>
     <string name="uel_prime_bolus">BOLUS MỒI</string>
     <string name="uel_treatment">ĐIỀU TRỊ</string>
-    <string name="uel_careportal_ns_refresh">CẬP NHẬT CAREPORTAL TỪ NS</string>
+    <string name="uel_careportal_ns_refresh">CẬP NHẬT THÔNG TIN ĐIỀU TRỊ TỪ NS</string>
     <string name="uel_profile_switch_ns_refresh">LÀM MỚI CHUYỂN CẤU HÌNH TỪ NS</string>
     <string name="uel_treatments_ns_refresh">CẬP NHẬT ĐIỀU TRỊ TỪ NS</string>
     <string name="uel_tt_ns_refresh">CẬP NHẬT TEMP TARGET TỪ NS</string>
     <string name="uel_automation_removed">ĐÃ XÓA TỰ ĐỘNG HOÁ</string>
     <string name="uel_bg_removed">BG REMOVED</string>
-    <string name="uel_careportal_removed">ĐÃ XÓA CAREPORTAL</string>
+    <string name="uel_calibration_removed">ĐÃ XÓA HIỆU CHUẨN</string>
+    <string name="uel_careportal_removed">ĐÃ XÓA THÔNG TIN ĐIỀU TRỊ</string>
     <string name="uel_bolus_removed">ĐÃ XÓA BOLUS</string>
     <string name="uel_carbs_removed">ĐÃ XÓA CARBS</string>
     <string name="uel_temp_basal_removed">ĐÃ XÓA LIỀU NỀN TẠM</string>
@@ -591,6 +645,7 @@
     <string name="uel_running_mode_updarted">ĐÃ CẬP NHẬT CHẾ ĐỘ THỂ DỤC</string>
     <string name="uel_scene_activated">ĐÃ KÍCH HOẠT NGỮ CẢNH</string>
     <string name="uel_scene_deactivated">ĐÃ TẮT NGỮ CẢNH</string>
+    <string name="uel_remote_config_changed">CẤU HÌNH TỪ XA ĐÃ THAY ĐỔI</string>
     <!-- HardLimits -->
     <string name="profile_low_target">Cấu hình mục tiêu thấp</string>
     <string name="profile_high_target">Cấu hình mục tiêu cao</string>
@@ -611,6 +666,9 @@
     <!-- Profile validation -->
     <string name="no_profile_selected">Chưa chọn hồ sơ</string>
     <string name="missing_profile_name">Thiếu tên cấu hình</string>
+    <string name="profile_not_saved_activate">Cấu hình điều trị chưa được lưu. Vui lòng lưu trước khi kích hoạt.</string>
+    <string name="profile_basal_not_compatible_with_pump">Tỷ lệ liều nền không tương thích với máy bơm hiện tại và không thể được kích hoạt. Hãy giảm tỷ lệ phần trăm hoặc điều chỉnh tỷ lệ liều nền.</string>
+    <string name="profile_pump_incompatible_label">Giới hạn Bơm</string>
     <string name="error_in_ic_values">Lỗi trong giá trị IC</string>
     <string name="error_in_isf_values">Lỗi trong giá trị IC</string>
     <string name="error_in_basal_values">Lỗi ở các giá trị liều nền</string>
@@ -644,7 +702,10 @@
     <string name="basal">Liều Basal</string>
     <string name="basalpct">Liều nền %</string>
     <string name="sensitivity">Độ nhạy</string>
-    <string name="isf_for_carbs">ISF dùng cho tính toán và hấp thụ carb: %1$.1f</string>
+    <string name="isf_for_carbs">ISF trung bình cho Tính toán và Hấp thu carb: %1$.1f</string>
+    <string name="isf_profile">Cấu hình ISF: %1$.1f</string>
+    <string name="isf_variable">ISF thay đổi: %1$.1f</string>
+    <string name="isf_effective">ISF hiệu dụng: %1$.1f</string>
     <string name="autosens_long">Giá trị Autosens: %.0f%%</string>
     <string name="autosens_short">%.0f%%</string>
     <string name="algorithm_long">Autosens trong thuật toán: %.0f%%</string>
@@ -685,26 +746,15 @@
     <string name="wizard_include_cob">Bao gồm COB</string>
     <string name="wizard_calculation">Tính toán</string>
     <string name="no_action_selected">Không có hành động nào được chọn, sẽ không có gì xảy ra</string>
-    <string name="carb_equal_zero_no_action">Carb = 0. Không có hành động nào được thực hiện!</string>
-    <string name="bolus_equal_zero_no_action">Bolus = 0. Không thực hiện hành động nào!</string>
+    <string name="carbs_removal_cob_limit" comment="Shown under the carbs field when removing carbs (a negative value). %1$d = grams of carbs currently on board, the maximum removable. Example: Max removal: 30 g (carbs on board)">Loại bỏ tối đa: %1$d g (carb đang hoạt động)</string>
     <string name="wizard_no_insulin_required">Không cần insulin</string>
     <string name="wizard_no_actual_bg">Chưa có BG gần đây để tính toán!</string>
     <string name="wizard_no_active_profile">Chưa có cấu hình nào hoạt động!</string>
-    <string name="wizard_no_cob">COB không xác định! Thiếu dữ liệu BG hoặc ứng dụng vừa khởi động lại?</string>
     <string name="wizard_carbs_constraint">Vi phạm giới hạn carb!</string>
-    <string name="wizard_explain_calc">Calc (IC: %1$.1f, ISF: %2$.1f)</string>
-    <string name="wizard_explain_carbs">Carbs: %1$.2fU</string>
-    <string name="wizard_explain_cob">COB: %1$.0fg %2$.2fU</string>
-    <string name="wizard_explain_bg">Đường huyết: %1$.2fU</string>
-    <string name="wizard_explain_iob">IOB: %1$.2fU</string>
-    <string name="wizard_explain_superbolus">Superbolus: %1$.2fU</string>
-    <string name="wizard_explain_trend">Xu hướng 15\': %1$.2fU</string>
     <string name="wizard_trend_detail">Xu hướng 15 phút (%1$s %2$s)</string>
-    <string name="wizard_explain_percent">Tỷ lệ/Phần trăm: %1$.2fU x %2$d%% ≈ %3$.2fU</string>
     <string name="wizard_constraint_bolus_size">Vượt giới hạn insulin!\nKhông thể tiêm %1$.2fU</string>
-    <string name="wizard_explain_tt">TempT: %1$s</string>
-    <string name="wizard_explain_tt_to">%1$s to %2$s</string>
     <string name="wizard_pump_not_available">Không có bơm khả dụng!</string>
+    <string name="quick_wizard_not_available">Quick Wizard đã chọn không còn khả dụng, vui lòng làm mới ô tiện ích</string>
     <string name="quickwizard_managemnt">Hướng dẫn nhanh</string>
     <!--    Preferences-->
     <string name="child">Trẻ em</string>
@@ -753,7 +803,7 @@
     <string name="history" comment="Tab/screen title for viewing past events">Lịch sử</string>
     <string name="overview_reservoir_concentration_value_over">Còn hơn %1$s</string>
     <!--    Constraints-->
-    <string name="limitingbasalratio">Giới hạn tỷ lệ nền tối đa ở %1$.2f U/h do %2$s</string>
+    <string name="limitingbasalratio">Giới hạn tỷ lệ liều nền tối đa ở %1$.2f U/h do %2$s</string>
     <string name="pumplimit">giới hạn Bơm</string>
     <string name="limitingpercentrate">Giới hạn tỷ lệ phần trăm tối đa %1$d%% do %2$s</string>
     <string name="itmustbepositivevalue">phải nhập giá trị dương</string>
@@ -821,12 +871,14 @@
     <string name="clear_cloud_action">Xóa cài đặt</string>
     <string name="clear_cloud_settings">Xóa cài đặt đám mây</string>
     <string name="clear_cloud_settings_message">Hành động này sẽ chuyển sang lưu trữ cục bộ và xóa quyền truy cập. Tiếp tục?</string>
+    <string name="cloud_revoke_incomplete">Cài đặt Cloud đã được xóa trên thiết bị này, nhưng không thể kết nối đến tài khoản để thu hồi hoàn toàn quyền truy cập. Bạn có thể cần xóa thủ công trong phần cài đặt tài khoản của mình.</string>
     <string name="cloud_connection_failed">Kết nối lưu trữ đám mây thất bại</string>
     <string name="cloud_reauthorize_message">Kết nối lưu trữ đám mây thất bại. Bạn có muốn xác thực lại không?</string>
     <string name="reauthorize">Xác thực lại</string>
     <string name="cloud_auth_success">Xác thực lưu trữ đám mây thành công</string>
     <string name="authorization_status">Trạng thái xác thực</string>
-    <string name="format_hour_minute">%1$dh %2$dm</string>
+    <string name="format_hour_minute" comment="%1$d=hours, %2$d=minutes. Example: 1 h 23 min">%1$d giờ %2$d phút</string>
+    <string name="format_hours_only" comment="%1$d=hours, when minutes are zero. Example: 4 h">%1$d giờ</string>
     <!-- datetime layout -->
     <string name="event_time_label">Thời điểm</string>
     <!-- BluetoothDevicePreference -->
@@ -1019,6 +1071,4 @@
     <string name="sensitivity_shortname" comment="Short label for Sensitivity/Autosens graph series">SENS%</string>
     <string name="variable_sensitivity_shortname" comment="Short label for Variable Sensitivity graph series">VSENS</string>
     <string name="steps_shortname" comment="Short label for Steps graph series">STEPS</string>
-    <string name="remove_items">Xóa mục</string>
-    <string name="sort_items">Sắp xếp các mục</string>
 </resources>

@@ -2,6 +2,7 @@ package app.aaps.plugins.source
 
 import android.content.ContentResolver
 import android.database.Cursor
+import app.aaps.core.data.configuration.Constants
 import app.aaps.core.data.model.GV
 import app.aaps.core.data.model.GlucoseUnit
 import app.aaps.core.data.model.SourceSensor
@@ -12,6 +13,7 @@ import app.aaps.core.interfaces.db.PersistenceLayer
 import app.aaps.plugins.source.keys.GlunovoLongKey
 import app.aaps.shared.tests.TestBaseWithProfile
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -79,7 +81,7 @@ class GlunovoPluginTest : TestBaseWithProfile() {
         // THEN
         val expectedGv = GV(
             timestamp = now - 1000,
-            value = 8.0 * 18, // conversion
+            value = 8.0 * Constants.MMOLL_TO_MGDL, // mmol/l → mg/dl conversion
             raw = 0.0,
             noise = null,
             trendArrow = TrendArrow.NONE,
@@ -224,7 +226,7 @@ class GlunovoPluginTest : TestBaseWithProfile() {
     }
 
     @Test
-    fun startStopTest() {
+    fun startStopTest() = runBlocking {
         Assertions.assertNull(glunovoPlugin.handler)
         glunovoPlugin.onStart()
         Assertions.assertNotNull(glunovoPlugin.handler)

@@ -14,10 +14,7 @@
     <string name="failed_update_basal_profile">Update basaal profiel mislukt</string>
     <string name="no_valid_basal_rate">Geen correcte basale snelheid van pomp kunnen lezen</string>
     <string name="limiting_iob">IOB gelimiteerd tot %1$.1f E doordat %2$s</string>
-    <string name="loop_disabled">LOOP UITGESCHAKELD DOOR BEPERKINGEN</string>
     <string name="event_type">Gebeurtenis type</string>
-    <string name="mgdl">mg/dl</string>
-    <string name="mmol">mmol/l</string>
     <string name="save">Opslaan</string>
     <string name="snooze">Sluimeren</string>
     <string name="virtual_pump">Virtuele Pomp</string>
@@ -41,7 +38,6 @@
     <string name="mute">Geluid dempen</string>
     <string name="success">Succes</string>
     <string name="advanced_settings_title">Geavanceerde instellingen</string>
-    <string name="extendedbolusdeliveryerror">Vertraagde bolus toedieningsfout</string>
     <string name="extended_bolus">Vertraagde bolus</string>
     <string name="paused">Gepauzeerd</string>
     <string name="tdd_total">TDD Totaal</string>
@@ -51,7 +47,6 @@
     <string name="formatsignedinsulinunits">%1$+.2f E</string>
     <string name="format_carbs">%1$d g</string>
     <string name="format_hours">%1$.2f u</string>
-    <string name="format_mins">%1$d minuten</string>
     <string name="objectives">Doelen</string>
     <string name="please_wait">Even geduld a.u.b.…</string>
     <string name="stop">Stop</string>
@@ -168,7 +163,6 @@
     <string name="basalprofilenotaligned">Basaalstanden niet ingesteld in hele uren: %1$s</string>
     <string name="minimalbasalvaluereplaced">Minimum basaalwaarde is vervangen door minimaal ondersteunde waarde: %1$s</string>
     <string name="maximumbasalvaluereplaced">Basale waarde vervangen door maximale ondersteunde waarde: %1$s</string>
-    <string name="profile_per_unit">/E</string>
     <string name="profile_ins_units_per_hour">E/u</string>
     <string name="profile_carbs_per_unit">g/E</string>
     <!--    ProfileFunction-->
@@ -216,6 +210,8 @@
     <string name="pump_battery_change">Pomp bat. wissel</string>
     <string name="temporary_target">Tijdelijk streefdoel</string>
     <string name="running_mode">Actieve modus</string>
+    <!-- Client-control action labels (shown in the pending/failure modal as "Couldn't {label}") -->
+    <!-- Client-control failure reasons (mapped from a FailureReason code on the showing device) -->
     <string name="careportal_temporarytargetvalue">Tijdelijk streefdoel</string>
     <string name="careportal_temporarytargetcancel">Tijdelijk streefdoel annuleren</string>
     <string name="boluswizard">Bolus wizard</string>
@@ -418,7 +414,6 @@
     <string name="basal">Basaal</string>
     <string name="basalpct">Basaal %</string>
     <string name="sensitivity">Gevoeligheid</string>
-    <string name="isf_for_carbs">ISF voor Bolus Calculator en Koolhydraten Absorptie: %1$.1f</string>
     <string name="autosens_long">Autosens Waarde: %.0f%%</string>
     <string name="algorithm_long">Autosens in algoritme: %.0f%%</string>
     <!-- Autotune -->
@@ -436,22 +431,10 @@
     <string name="bolus_recorded_only">Bolus wordt alleen geregistreerd (niet toegediend door pomp)</string>
     <string name="advisoralarm">Start alarm wanneer het tijd is om te eten</string>
     <string name="no_action_selected">Geen actie geselecteerd, er zal niets uitgevoerd worden</string>
-    <string name="carb_equal_zero_no_action">Koolhydraten = 0. Geen actie!</string>
     <string name="wizard_no_actual_bg">Geen recente BG om de berekening op te baseren!</string>
     <string name="wizard_no_active_profile">Geen actief profiel ingesteld!</string>
-    <string name="wizard_no_cob">Onbekende COB! BG uitlezing ontbreekt of de recente app herstart?</string>
     <string name="wizard_carbs_constraint">Koolhydraten beperking overschreden!</string>
-    <string name="wizard_explain_calc">Calc (IC: %1$.1f, ISF: %2$.1f)</string>
-    <string name="wizard_explain_carbs">Koolhydraten: %1$.2fE</string>
-    <string name="wizard_explain_cob">COB: %1$.0fg %2$.2fE</string>
-    <string name="wizard_explain_bg">BG: %1$.2fE</string>
-    <string name="wizard_explain_iob">IOB: %1$.2fU</string>
-    <string name="wizard_explain_superbolus">Superbolus: %1$.2fE</string>
-    <string name="wizard_explain_trend">15\' trend: %1$.2fE</string>
-    <string name="wizard_explain_percent">Percentage: %1$.2fE x %2$d%% ≈ %3$.2fE</string>
     <string name="wizard_constraint_bolus_size">Insuline beperking!\nKan %1$.2fE niet leveren</string>
-    <string name="wizard_explain_tt">Tijdelijk Doel: %1$s</string>
-    <string name="wizard_explain_tt_to">%1$s tot %2$s</string>
     <string name="wizard_pump_not_available">Geen pomp beschikbaar!</string>
     <!--    Preferences-->
     <string name="child">Kind</string>
@@ -522,7 +505,6 @@
     <!-- Export destination chip labels -->
     <!-- Maintenance bottom sheet descriptions -->
     <!-- Cloud directory dialog (Compose) -->
-    <string name="format_hour_minute">%1$du %2$dm</string>
     <!-- datetime layout -->
     <string name="event_time_label">Gebeurtenis tijdstip</string>
     <!-- BluetoothDevicePreference -->
