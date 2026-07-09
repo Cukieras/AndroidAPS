@@ -9,6 +9,7 @@ import app.aaps.core.data.time.T
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.pump.PumpSync
+import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.rx.AapsSchedulers
 import app.aaps.core.interfaces.ui.UiInteraction
 import app.aaps.core.interfaces.utils.DateUtil
@@ -28,6 +29,7 @@ import app.aaps.pump.carelevo.domain.usecase.alarm.AlarmClearRequestUseCase
 import app.aaps.pump.carelevo.domain.usecase.alarm.CarelevoAlarmInfoUseCase
 import app.aaps.pump.carelevo.domain.usecase.alarm.model.AlarmClearUseCaseRequest
 import app.aaps.pump.carelevo.domain.usecase.infusion.CarelevoPumpResumeUseCase
+import app.aaps.pump.carelevo.ext.transformNotificationStringResources
 import app.aaps.pump.carelevo.presentation.model.AlarmEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.reactivex.rxjava3.disposables.CompositeDisposable
@@ -48,6 +50,7 @@ class CarelevoAlarmViewModel @Inject constructor(
     private val dateUtil: DateUtil,
     private val aapsLogger: AAPSLogger,
     private val uiInteraction: UiInteraction,
+    private val rh: ResourceHelper,
     private val aapsSchedulers: AapsSchedulers,
     private val carelevoPatch: CarelevoPatch,
     private val bleController: CarelevoBleController,
@@ -88,7 +91,11 @@ class CarelevoAlarmViewModel @Inject constructor(
     }
 
     private fun startAlarm(reason: String) {
-        if (sound != 0) uiInteraction.startAlarm(sound, reason)
+        if (sound == 0) return
+        val title = rh.gs(R.string.carelevo)
+        val status = alarmInfo?.let { rh.gs(it.cause.transformNotificationStringResources().first) } ?: title
+        aapsLogger.debug(LTag.PUMPCOMM, "startAlarm reason=$reason status=$status")
+        uiInteraction.runAlarm(status, title, sound)
     }
 
     private fun stopAlarm(reason: String) {

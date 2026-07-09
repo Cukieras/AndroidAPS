@@ -47,11 +47,9 @@ class CarelevoBasalProfileUpdateCoordinator @Inject constructor(
         val result = pumpEnactResultProvider.get()
         val now = System.currentTimeMillis()
         if (now - lastProfileUpdateAttemptMs < 30_000) {
-            notificationManager.post(
-                NotificationId.FAILED_UPDATE_PROFILE,
-                rh.gs(R.string.carelevo_profile_update_skip_too_soon),
-                validMinutes = 1
-            )
+            // Benign debounce: a repeated profile-set within 30s is skipped, not a real failure.
+            // Do not post FAILED_UPDATE_PROFILE here — dev reclassified it to URGENT, so posting it
+            // for this non-event would ring the alarm. Log only; the real failure branches below post.
             aapsLogger.debug(LTag.PUMPCOMM, "execute.skip tooSoon=true")
             return result
                 .success(true)
@@ -94,12 +92,22 @@ class CarelevoBasalProfileUpdateCoordinator @Inject constructor(
             is ResponseResult.Error   -> {
                 aapsLogger.error(LTag.PUMPCOMM, "execute.error error=${response.e}", response.e)
                 lastProfileUpdateAttemptMs = System.currentTimeMillis()
+                notificationManager.post(
+                    NotificationId.FAILED_UPDATE_PROFILE,
+                    app.aaps.core.ui.R.string.failed_update_basal_profile,
+                    validMinutes = 60
+                )
                 result.success(false).enacted(false)
             }
 
             is ResponseResult.Failure -> {
                 aapsLogger.error(LTag.PUMPCOMM, "execute.failure unknownResponse=$response")
                 lastProfileUpdateAttemptMs = System.currentTimeMillis()
+                notificationManager.post(
+                    NotificationId.FAILED_UPDATE_PROFILE,
+                    app.aaps.core.ui.R.string.failed_update_basal_profile,
+                    validMinutes = 60
+                )
                 result.success(false).enacted(false)
             }
         }

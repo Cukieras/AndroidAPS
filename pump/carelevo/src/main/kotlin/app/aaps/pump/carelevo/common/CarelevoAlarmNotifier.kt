@@ -6,7 +6,6 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.media.MediaPlayer
 import androidx.annotation.StringRes
 import androidx.core.app.NotificationCompat
 import androidx.core.text.HtmlCompat
@@ -90,6 +89,10 @@ class CarelevoAlarmNotifier @Inject constructor(
     }
 
     fun showTopNotification(alarms: List<CarelevoAlarmInfo>) {
+        // CARELEVO_PATCH_ALERT is allowMultiple=true (a fresh instance per post with no replace), so
+        // clear the previous carelevo cards before re-posting the current set. This gives
+        // replace-on-refresh semantics while still letting distinct concurrent alarms coexist.
+        notificationManager.dismiss(NotificationId.CARELEVO_PATCH_ALERT)
         alarms.forEach { newAlarm ->
             val (titleRes, descRes, btnRes) = newAlarm.cause.transformNotificationStringResources()
 
@@ -97,7 +100,7 @@ class CarelevoAlarmNotifier @Inject constructor(
             val desc = buildDescription(descRes, descArgs)
             aapsLogger.debug(LTag.PUMPCOMM, "showTopNotification titleRes=$titleRes descArgs=$descArgs desc=$desc")
             notificationManager.post(
-                id = NotificationId.COMBO_PUMP_ALARM,
+                id = NotificationId.CARELEVO_PATCH_ALERT,
                 text = context.getString(titleRes) + "\n" + HtmlCompat.fromHtml(desc, HtmlCompat.FROM_HTML_MODE_LEGACY),
                 level = NotificationLevel.NORMAL,
                 actions = listOf(
@@ -228,18 +231,6 @@ class CarelevoAlarmNotifier @Inject constructor(
         val notificationManager: NotificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.createNotificationChannel(channel)
-    }
-
-    private fun cancelNotification(alarmId: String) {
-        val notificationManager =
-            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.cancel(alarmId.hashCode())
-    }
-
-    private fun playBeep() {
-        val player = MediaPlayer.create(context, app.aaps.core.ui.R.raw.error) // res/raw/alarm_sound.mp3
-        player.setOnCompletionListener { it.release() }
-        player.start()
     }
 
     private fun buildDescArgsFor(alarm: CarelevoAlarmInfo): List<String> = when (alarm.cause) {

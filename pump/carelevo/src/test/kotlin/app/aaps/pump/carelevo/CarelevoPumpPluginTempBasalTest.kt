@@ -5,6 +5,7 @@ import app.aaps.pump.carelevo.domain.model.ResponseResult
 import app.aaps.pump.carelevo.domain.model.result.ResultSuccess
 import com.google.common.truth.Truth.assertThat
 import io.reactivex.rxjava3.core.Single
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -16,7 +17,7 @@ class CarelevoPumpPluginTempBasalTest : CarelevoPumpPluginTestBase() {
     fun `setTempBasalAbsolute should return not enacted when bluetooth is disabled`() {
         whenever(carelevoPatch.isBluetoothEnabled()).thenReturn(false)
 
-        val result = plugin.setTempBasalAbsolute(1.2, 30, false, PumpSync.TemporaryBasalType.NORMAL)
+        val result = runBlocking { plugin.setTempBasalAbsolute(1.2, 30, false, PumpSync.TemporaryBasalType.NORMAL) }
 
         assertThat(result.enacted).isFalse()
     }
@@ -25,7 +26,7 @@ class CarelevoPumpPluginTempBasalTest : CarelevoPumpPluginTestBase() {
     fun `setTempBasalAbsolute should return not enacted when pump is disconnected`() {
         whenever(carelevoPatch.isCarelevoConnected()).thenReturn(false)
 
-        val result = plugin.setTempBasalAbsolute(1.2, 30, false, PumpSync.TemporaryBasalType.NORMAL)
+        val result = runBlocking { plugin.setTempBasalAbsolute(1.2, 30, false, PumpSync.TemporaryBasalType.NORMAL) }
 
         assertThat(result.enacted).isFalse()
     }
@@ -36,7 +37,7 @@ class CarelevoPumpPluginTempBasalTest : CarelevoPumpPluginTestBase() {
             Single.just(ResponseResult.Success(ResultSuccess))
         )
 
-        val result = plugin.setTempBasalAbsolute(1.2, 30, false, PumpSync.TemporaryBasalType.NORMAL)
+        val result = runBlocking { plugin.setTempBasalAbsolute(1.2, 30, false, PumpSync.TemporaryBasalType.NORMAL) }
 
         assertThat(result.success).isTrue()
         assertThat(result.enacted).isTrue()
@@ -49,7 +50,7 @@ class CarelevoPumpPluginTempBasalTest : CarelevoPumpPluginTestBase() {
             Single.just(ResponseResult.Error(IllegalStateException("failed")))
         )
 
-        val result = plugin.setTempBasalAbsolute(1.2, 30, false, PumpSync.TemporaryBasalType.NORMAL)
+        val result = runBlocking { plugin.setTempBasalAbsolute(1.2, 30, false, PumpSync.TemporaryBasalType.NORMAL) }
 
         assertThat(result.success).isFalse()
         assertThat(result.enacted).isFalse()
@@ -61,7 +62,7 @@ class CarelevoPumpPluginTempBasalTest : CarelevoPumpPluginTestBase() {
             Single.just(ResponseResult.Success(ResultSuccess))
         )
 
-        val result = plugin.setTempBasalPercent(150, 30, false, PumpSync.TemporaryBasalType.NORMAL)
+        val result = runBlocking { plugin.setTempBasalPercent(150, 30, false, PumpSync.TemporaryBasalType.NORMAL) }
 
         assertThat(result.success).isTrue()
         assertThat(result.enacted).isTrue()
@@ -75,7 +76,7 @@ class CarelevoPumpPluginTempBasalTest : CarelevoPumpPluginTestBase() {
         )
 
         assertThrows(IllegalStateException::class.java) {
-            plugin.setTempBasalPercent(150, 30, false, PumpSync.TemporaryBasalType.NORMAL)
+            runBlocking { plugin.setTempBasalPercent(150, 30, false, PumpSync.TemporaryBasalType.NORMAL) }
         }
     }
 
@@ -83,7 +84,7 @@ class CarelevoPumpPluginTempBasalTest : CarelevoPumpPluginTestBase() {
     fun `cancelTempBasal should return not enacted when disconnected`() {
         whenever(carelevoPatch.isCarelevoConnected()).thenReturn(false)
 
-        val result = plugin.cancelTempBasal(false)
+        val result = runBlocking { plugin.cancelTempBasal(false) }
 
         assertThat(result.enacted).isFalse()
     }
@@ -94,7 +95,7 @@ class CarelevoPumpPluginTempBasalTest : CarelevoPumpPluginTestBase() {
             Single.just(ResponseResult.Success(ResultSuccess))
         )
 
-        val result = plugin.cancelTempBasal(false)
+        val result = runBlocking { plugin.cancelTempBasal(false) }
 
         assertThat(result.success).isTrue()
         assertThat(result.enacted).isTrue()
@@ -107,7 +108,7 @@ class CarelevoPumpPluginTempBasalTest : CarelevoPumpPluginTestBase() {
             Single.error(IllegalStateException("timeout"))
         )
 
-        val result = plugin.cancelTempBasal(false)
+        val result = runBlocking { plugin.cancelTempBasal(false) }
 
         assertThat(result.success).isFalse()
         assertThat(result.enacted).isFalse()

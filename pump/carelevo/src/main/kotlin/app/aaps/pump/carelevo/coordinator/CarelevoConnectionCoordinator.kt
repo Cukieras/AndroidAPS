@@ -2,8 +2,6 @@ package app.aaps.pump.carelevo.coordinator
 
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
-import app.aaps.core.interfaces.queue.Command
-import app.aaps.core.interfaces.queue.CommandQueue
 import app.aaps.core.interfaces.rx.AapsSchedulers
 import app.aaps.pump.carelevo.ble.core.CarelevoBleController
 import app.aaps.pump.carelevo.ble.core.Connect
@@ -20,7 +18,6 @@ import app.aaps.pump.carelevo.common.model.PatchState
 import app.aaps.pump.carelevo.domain.model.ResponseResult
 import app.aaps.pump.carelevo.domain.usecase.patch.CarelevoRequestPatchInfusionInfoUseCase
 import io.reactivex.rxjava3.disposables.CompositeDisposable
-import io.reactivex.rxjava3.kotlin.plusAssign
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -31,13 +28,11 @@ import kotlin.jvm.optionals.getOrNull
 class CarelevoConnectionCoordinator @Inject constructor(
     private val aapsLogger: AAPSLogger,
     private val aapsSchedulers: AapsSchedulers,
-    private val commandQueue: CommandQueue,
     private val carelevoPatch: CarelevoPatch,
     private val bleController: CarelevoBleController,
     private val requestPatchInfusionInfoUseCase: CarelevoRequestPatchInfusionInfoUseCase
 ) {
 
-    private var queueStuckSince: Long? = null
     private var reconnectDisposable = CompositeDisposable()
 
     fun onStop() {
@@ -86,32 +81,36 @@ class CarelevoConnectionCoordinator @Inject constructor(
     }
 
     fun refreshPumpStatus(
-        pluginDisposable: CompositeDisposable,
         onLastDataUpdated: () -> Unit
     ) {
         if (!carelevoPatch.isBluetoothEnabled()) return
         if (!carelevoPatch.isCarelevoConnected()) return
 
-        pluginDisposable += requestPatchInfusionInfoUseCase.execute()
-            .observeOn(aapsSchedulers.main)
-            .subscribeOn(aapsSchedulers.io)
-            .timeout(3000L, TimeUnit.MILLISECONDS)
-            .subscribe { response ->
-                when (response) {
-                    is ResponseResult.Success -> {
-                        onLastDataUpdated()
-                        aapsLogger.debug(LTag.PUMPCOMM, "getPumpStatus.success")
-                    }
+        // Block until the read completes (or times out). The suspend CommandReadStatus reads
+        // lastDataTime and reports the status read immediately after getPumpStatus() returns, so a
+        // fire-and-forget subscribe would let the queue treat a stale/failed read as complete.
+        try {
+            val response = requestPatchInfusionInfoUseCase.execute()
+                .subscribeOn(aapsSchedulers.io)
+                .timeout(3000L, TimeUnit.MILLISECONDS)
+                .blockingGet()
+            when (response) {
+                is ResponseResult.Success -> {
+                    onLastDataUpdated()
+                    aapsLogger.debug(LTag.PUMPCOMM, "getPumpStatus.success")
+                }
 
-                    is ResponseResult.Error   -> {
-                        aapsLogger.debug(LTag.PUMPCOMM, "getPumpStatus.responseError error=${response.e}")
-                    }
+                is ResponseResult.Error   -> {
+                    aapsLogger.debug(LTag.PUMPCOMM, "getPumpStatus.responseError error=${response.e}")
+                }
 
-                    else                      -> {
-                        aapsLogger.debug(LTag.PUMPCOMM, "getPumpStatus.failure")
-                    }
+                else                      -> {
+                    aapsLogger.debug(LTag.PUMPCOMM, "getPumpStatus.failure")
                 }
             }
+        } catch (e: Throwable) {
+            aapsLogger.error(LTag.PUMPCOMM, "getPumpStatus.error", e)
+        }
     }
 
     fun startReconnection(txUuid: UUID) {
@@ -214,39 +213,5 @@ class CarelevoConnectionCoordinator @Inject constructor(
     private fun stopReconnection() {
         aapsLogger.debug(LTag.PUMPCOMM, "reconnect.stop")
         reconnectDisposable.clear()
-    }
-
-    private fun forceQueueClear() {
-        val running = Command.CommandType.entries
-            .filter { commandQueue.isRunning(it) }
-
-        if (running.isEmpty()) {
-            queueStuckSince = null
-            return
-        }
-
-        if (running.any { it == Command.CommandType.BOLUS || it == Command.CommandType.SMB_BOLUS }) {
-            queueStuckSince = null
-            return
-        }
-
-        val now = System.currentTimeMillis()
-        if (queueStuckSince == null) {
-            queueStuckSince = now
-            return
-        }
-
-        val elapsed = now - queueStuckSince!!
-        val isOnlyBasalProfileRunning = running.size == 1 && running[0] == Command.CommandType.BASAL_PROFILE
-        val timeoutMs = if (isOnlyBasalProfileRunning) 30_000L else 5 * 60 * 1000L
-        if (elapsed > timeoutMs) {
-            aapsLogger.error(
-                LTag.PUMPCOMM,
-                "queue.forceReset elapsedSec=${elapsed / 1000} timeoutMs=$timeoutMs running=${running.joinToString { it.name }}"
-            )
-            commandQueue.resetPerforming()
-            commandQueue.clear()
-            queueStuckSince = null
-        }
     }
 }

@@ -5,6 +5,7 @@ import app.aaps.pump.carelevo.domain.model.ResponseResult
 import app.aaps.pump.carelevo.domain.model.result.ResultSuccess
 import com.google.common.truth.Truth.assertThat
 import io.reactivex.rxjava3.core.Single
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.never
@@ -38,7 +39,7 @@ class CarelevoPumpPluginStatusTest : CarelevoPumpPluginTestBase() {
     fun `getPumpStatus should skip request when bluetooth is disabled`() {
         whenever(carelevoPatch.isBluetoothEnabled()).thenReturn(false)
 
-        plugin.getPumpStatus("test")
+        runBlocking { plugin.getPumpStatus("test") }
 
         verify(requestPatchInfusionInfoUseCase, never()).execute()
     }
@@ -48,7 +49,7 @@ class CarelevoPumpPluginStatusTest : CarelevoPumpPluginTestBase() {
         whenever(carelevoPatch.isBluetoothEnabled()).thenReturn(true)
         whenever(carelevoPatch.isCarelevoConnected()).thenReturn(false)
 
-        plugin.getPumpStatus("test")
+        runBlocking { plugin.getPumpStatus("test") }
 
         verify(requestPatchInfusionInfoUseCase, never()).execute()
     }
@@ -59,7 +60,7 @@ class CarelevoPumpPluginStatusTest : CarelevoPumpPluginTestBase() {
             Single.just(ResponseResult.Success(ResultSuccess))
         )
 
-        plugin.getPumpStatus("test")
+        runBlocking { plugin.getPumpStatus("test") }
 
         verify(requestPatchInfusionInfoUseCase).execute()
     }
@@ -70,7 +71,7 @@ class CarelevoPumpPluginStatusTest : CarelevoPumpPluginTestBase() {
             Single.just(ResponseResult.Success(ResultSuccess))
         )
 
-        plugin.timezoneOrDSTChanged(TimeChangeType.TimezoneChanged)
+        runBlocking { plugin.timezoneOrDSTChanged(TimeChangeType.TimezoneChanged) }
 
         verify(carelevoPatchTimeZoneUpdateUseCase).execute(any())
     }

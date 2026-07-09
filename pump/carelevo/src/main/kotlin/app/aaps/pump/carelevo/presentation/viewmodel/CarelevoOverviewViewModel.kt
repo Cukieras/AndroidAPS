@@ -1,5 +1,6 @@
 package app.aaps.pump.carelevo.presentation.viewmodel
 
+import android.content.Context
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SwapHoriz
@@ -16,11 +17,13 @@ import app.aaps.core.interfaces.pump.PumpSync
 import app.aaps.core.interfaces.queue.CommandQueue
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.rx.AapsSchedulers
+import app.aaps.core.interfaces.rx.bus.RxBus
 import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.ui.compose.StatusLevel
 import app.aaps.core.ui.compose.icons.IcLoopPaused
 import app.aaps.core.ui.compose.pump.ActionCategory
 import app.aaps.core.ui.compose.pump.PumpAction
+import app.aaps.core.ui.compose.pump.PumpCommunicationStatus
 import app.aaps.core.ui.compose.pump.PumpInfoRow
 import app.aaps.core.ui.compose.pump.PumpOverviewUiState
 import app.aaps.core.ui.compose.pump.StatusBanner
@@ -50,6 +53,7 @@ import app.aaps.pump.carelevo.presentation.model.CarelevoOverviewEvent
 import app.aaps.pump.carelevo.presentation.model.CarelevoOverviewUiModel
 import app.aaps.pump.carelevo.presentation.type.CarelevoScreenType
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.kotlin.plusAssign
@@ -93,7 +97,9 @@ class CarelevoOverviewViewModel @Inject constructor(
     private val pumpStopUseCase: CarelevoPumpStopUseCase,
     private val pumpResumeUseCase: CarelevoPumpResumeUseCase,
     private val requestPatchInfusionInfoUseCase: CarelevoRequestPatchInfusionInfoUseCase,
-    private val carelevoDeleteInfusionInfoUseCase: CarelevoDeleteInfusionInfoUseCase
+    private val carelevoDeleteInfusionInfoUseCase: CarelevoDeleteInfusionInfoUseCase,
+    private val rxBus: RxBus,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _bluetoothState = MutableLiveData<DeviceModuleState?>()
@@ -144,6 +150,8 @@ class CarelevoOverviewViewModel @Inject constructor(
     private val _basalRateFlow = MutableStateFlow(0.0)
     private val _tempBasalRateFlow = MutableStateFlow<Double?>(null)
 
+    private val communicationStatus = PumpCommunicationStatus(rxBus, commandQueue, context, viewModelScope)
+
     private val overviewInputs = combine(
         _bluetoothStateFlow,
         _patchStateFlow,
@@ -162,8 +170,9 @@ class CarelevoOverviewViewModel @Inject constructor(
 
     val overviewUiState = combine(
         overviewInputs,
+        communicationStatus.refreshTrigger,
         tickerFlow(30_000L)
-    ) { inputs, _ ->
+    ) { inputs, _, _ ->
         buildOverviewState(
             bluetoothState = inputs.bluetoothState,
             patchState = inputs.patchState,
@@ -298,7 +307,13 @@ class CarelevoOverviewViewModel @Inject constructor(
             bootDateTimeUi = bootUi,
             expirationTime = expireAt,
             infusionStatus = info.mode,
-            insulinRemainText = "${info.insulinRemain} / ${info.insulinAmount} U",
+            insulinRemainText = if (info.insulinRemain != null && info.insulinAmount != null)
+                rh.gs(
+                    R.string.carelevo_insulin_remain_value,
+                    rh.gs(R.string.common_label_unit_value_dose_with_space, info.insulinRemain),
+                    rh.gs(R.string.common_label_unit_value_dose_with_space, info.insulinAmount)
+                )
+            else "",
             totalBasal = infusedBasal,
             totalBolus = infusedBolus,
             isPumpStopped = info.isStopped ?: false,
@@ -541,60 +556,62 @@ class CarelevoOverviewViewModel @Inject constructor(
         val isExtendBolusRunning = infusionInfo?.extendBolusInfusionInfo != null
         val isTempBasalRunning = infusionInfo?.tempBasalInfusionInfo != null
 
-        val cancelExtendBolusResult = if (isExtendBolusRunning) {
-            cancelExtendBolus()
-        } else {
-            true
-        }
-        val cancelTempBasalResult = if (isTempBasalRunning) {
-            cancelTempBasal()
-        } else {
-            true
-        }
+        viewModelScope.launch {
+            val cancelExtendBolusResult = if (isExtendBolusRunning) {
+                cancelExtendBolus()
+            } else {
+                true
+            }
+            val cancelTempBasalResult = if (isTempBasalRunning) {
+                cancelTempBasal()
+            } else {
+                true
+            }
 
-        aapsLogger.debug(LTag.PUMPCOMM, "[startPumpStopProcess] isTempBasalRunning=$cancelTempBasalResult, isExtendBolusRunning=$cancelExtendBolusResult, stopMinute: $stopMinute")
+            aapsLogger.debug(LTag.PUMPCOMM, "[startPumpStopProcess] isTempBasalRunning=$cancelTempBasalResult, isExtendBolusRunning=$cancelExtendBolusResult, stopMinute: $stopMinute")
 
-        if (cancelExtendBolusResult && cancelTempBasalResult) {
-            compositeDisposable += pumpStopUseCase.execute(CarelevoPumpStopRequestModel(durationMin = stopMinute))
-                .timeout(3000L, TimeUnit.MILLISECONDS)
-                .subscribeOn(aapsSchedulers.io)
-                .observeOn(aapsSchedulers.main)
-                .doOnError { e ->
-                    aapsLogger.debug(LTag.PUMPCOMM, "[startPumpStopProcess] doOnError: $e")
-                }
-                .doFinally {
-                    setUiState(UiState.Idle)
-                }
-                .subscribe(
-                    { response ->
-                        when (response) {
-                            is ResponseResult.Success -> {
-                                handlePumpStopResponse(
-                                    isTempBasalRunning = isTempBasalRunning,
-                                    isExtendBolusRunning = isExtendBolusRunning,
-                                    stopMinute = stopMinute
-                                )
+            if (cancelExtendBolusResult && cancelTempBasalResult) {
+                compositeDisposable += pumpStopUseCase.execute(CarelevoPumpStopRequestModel(durationMin = stopMinute))
+                    .timeout(3000L, TimeUnit.MILLISECONDS)
+                    .subscribeOn(aapsSchedulers.io)
+                    .observeOn(aapsSchedulers.main)
+                    .doOnError { e ->
+                        aapsLogger.debug(LTag.PUMPCOMM, "[startPumpStopProcess] doOnError: $e")
+                    }
+                    .doFinally {
+                        setUiState(UiState.Idle)
+                    }
+                    .subscribe(
+                        { response ->
+                            when (response) {
+                                is ResponseResult.Success -> {
+                                    handlePumpStopResponse(
+                                        isTempBasalRunning = isTempBasalRunning,
+                                        isExtendBolusRunning = isExtendBolusRunning,
+                                        stopMinute = stopMinute
+                                    )
+                                }
+
+                                is ResponseResult.Error   -> {
+                                    aapsLogger.debug(LTag.PUMPCOMM, "[startPumpStopProcess] response error: ${response.e}")
+                                    triggerEvent(CarelevoOverviewEvent.StopPumpFailed)
+                                }
+
+                                else                      -> {
+                                    aapsLogger.debug(LTag.PUMPCOMM, "[startPumpStopProcess] response failed/unknown")
+                                    triggerEvent(CarelevoOverviewEvent.StopPumpFailed)
+                                }
                             }
-
-                            is ResponseResult.Error   -> {
-                                aapsLogger.debug(LTag.PUMPCOMM, "[startPumpStopProcess] response error: ${response.e}")
-                                triggerEvent(CarelevoOverviewEvent.StopPumpFailed)
-                            }
-
-                            else                      -> {
-                                aapsLogger.debug(LTag.PUMPCOMM, "[startPumpStopProcess] response failed/unknown")
-                                triggerEvent(CarelevoOverviewEvent.StopPumpFailed)
-                            }
-                        }
-                    },
-                    { e ->
-                        aapsLogger.debug(LTag.PUMPCOMM, "[startPumpStopProcess] subscribe throwable: $e")
-                        triggerEvent(CarelevoOverviewEvent.StopPumpFailed)
-                    })
-        } else {
-            aapsLogger.debug(LTag.PUMPCOMM, "[startPumpStopProcess] no active temp/extend bolus to cancel")
-            setUiState(UiState.Idle)
-            triggerEvent(CarelevoOverviewEvent.StopPumpFailed)
+                        },
+                        { e ->
+                            aapsLogger.debug(LTag.PUMPCOMM, "[startPumpStopProcess] subscribe throwable: $e")
+                            triggerEvent(CarelevoOverviewEvent.StopPumpFailed)
+                        })
+            } else {
+                aapsLogger.debug(LTag.PUMPCOMM, "[startPumpStopProcess] no active temp/extend bolus to cancel")
+                setUiState(UiState.Idle)
+                triggerEvent(CarelevoOverviewEvent.StopPumpFailed)
+            }
         }
     }
 
@@ -636,12 +653,12 @@ class CarelevoOverviewViewModel @Inject constructor(
         triggerEvent(CarelevoOverviewEvent.StopPumpComplete)
     }
 
-    private fun cancelTempBasal(): Boolean {
-        return commandQueue.cancelTempBasal(true, callback = null)
+    private suspend fun cancelTempBasal(): Boolean {
+        return commandQueue.cancelTempBasal(true).success
     }
 
-    private fun cancelExtendBolus(): Boolean {
-        return commandQueue.cancelExtended(null)
+    private suspend fun cancelExtendBolus(): Boolean {
+        return commandQueue.cancelExtended().success
     }
 
     fun startPumpResume() {
@@ -901,6 +918,7 @@ class CarelevoOverviewViewModel @Inject constructor(
 
         return PumpOverviewUiState(
             statusBanner = banner,
+            queueStatus = communicationStatus.queueStatus(),
             infoRows = infoRows,
             primaryActions = primaryActions,
             managementActions = managementActions

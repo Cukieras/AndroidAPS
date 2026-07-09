@@ -7,6 +7,7 @@ import app.aaps.pump.carelevo.domain.model.infusion.CarelevoInfusionInfoDomainMo
 import app.aaps.pump.carelevo.domain.model.result.ResultSuccess
 import com.google.common.truth.Truth.assertThat
 import io.reactivex.rxjava3.core.Single
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -23,7 +24,7 @@ class CarelevoPumpPluginBolusTest : CarelevoPumpPluginTestBase() {
         }
 
         assertThrows(IllegalArgumentException::class.java) {
-            plugin.deliverTreatment(bolusInfo)
+            runBlocking { plugin.deliverTreatment(bolusInfo) }
         }
     }
 
@@ -35,7 +36,7 @@ class CarelevoPumpPluginBolusTest : CarelevoPumpPluginTestBase() {
         }
 
         assertThrows(IllegalArgumentException::class.java) {
-            plugin.deliverTreatment(bolusInfo)
+            runBlocking { plugin.deliverTreatment(bolusInfo) }
         }
     }
 
@@ -43,10 +44,12 @@ class CarelevoPumpPluginBolusTest : CarelevoPumpPluginTestBase() {
     fun `deliverTreatment should return not enacted when bluetooth is disabled`() {
         whenever(carelevoPatch.isBluetoothEnabled()).thenReturn(false)
 
-        val result = plugin.deliverTreatment(DetailedBolusInfo().apply {
-            insulin = 1.0
-            carbs = 0.0
-        })
+        val result = runBlocking {
+            plugin.deliverTreatment(DetailedBolusInfo().apply {
+                insulin = 1.0
+                carbs = 0.0
+            })
+        }
 
         assertThat(result.enacted).isFalse()
     }
@@ -55,10 +58,12 @@ class CarelevoPumpPluginBolusTest : CarelevoPumpPluginTestBase() {
     fun `deliverTreatment should return not enacted when pump is disconnected`() {
         whenever(carelevoPatch.isCarelevoConnected()).thenReturn(false)
 
-        val result = plugin.deliverTreatment(DetailedBolusInfo().apply {
-            insulin = 1.0
-            carbs = 0.0
-        })
+        val result = runBlocking {
+            plugin.deliverTreatment(DetailedBolusInfo().apply {
+                insulin = 1.0
+                carbs = 0.0
+            })
+        }
 
         assertThat(result.enacted).isFalse()
     }
@@ -79,10 +84,12 @@ class CarelevoPumpPluginBolusTest : CarelevoPumpPluginTestBase() {
             )
         )
 
-        val result = plugin.deliverTreatment(DetailedBolusInfo().apply {
-            insulin = 1.0
-            carbs = 0.0
-        })
+        val result = runBlocking {
+            plugin.deliverTreatment(DetailedBolusInfo().apply {
+                insulin = 1.0
+                carbs = 0.0
+            })
+        }
 
         assertThat(result.success).isFalse()
         assertThat(result.enacted).isFalse()
@@ -95,7 +102,7 @@ class CarelevoPumpPluginBolusTest : CarelevoPumpPluginTestBase() {
             Single.just(ResponseResult.Success(ResultSuccess))
         )
 
-        val result = plugin.setExtendedBolus(insulin = 1.2, durationInMinutes = 30)
+        val result = runBlocking { plugin.setExtendedBolus(insulin = 1.2, durationInMinutes = 30) }
 
         assertThat(result.success).isTrue()
         assertThat(result.enacted).isTrue()
@@ -107,7 +114,7 @@ class CarelevoPumpPluginBolusTest : CarelevoPumpPluginTestBase() {
             Single.just(ResponseResult.Error(IllegalStateException("failed")))
         )
 
-        val result = plugin.setExtendedBolus(insulin = 1.2, durationInMinutes = 30)
+        val result = runBlocking { plugin.setExtendedBolus(insulin = 1.2, durationInMinutes = 30) }
 
         assertThat(result.success).isFalse()
         assertThat(result.enacted).isFalse()
@@ -119,7 +126,7 @@ class CarelevoPumpPluginBolusTest : CarelevoPumpPluginTestBase() {
             Single.just(ResponseResult.Success(ResultSuccess))
         )
 
-        val result = plugin.cancelExtendedBolus()
+        val result = runBlocking { plugin.cancelExtendedBolus() }
 
         assertThat(result.success).isTrue()
         assertThat(result.enacted).isTrue()
@@ -132,7 +139,7 @@ class CarelevoPumpPluginBolusTest : CarelevoPumpPluginTestBase() {
             Single.just(ResponseResult.Error(IllegalStateException("failed")))
         )
 
-        val result = plugin.cancelExtendedBolus()
+        val result = runBlocking { plugin.cancelExtendedBolus() }
 
         assertThat(result.success).isFalse()
         assertThat(result.enacted).isFalse()

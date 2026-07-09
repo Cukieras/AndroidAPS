@@ -5,6 +5,7 @@ import app.aaps.core.data.pump.defs.ManufacturerType
 import app.aaps.core.data.pump.defs.PumpType
 import app.aaps.pump.carelevo.common.model.PatchState
 import com.google.common.truth.Truth.assertThat
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
@@ -124,7 +125,7 @@ class CarelevoPumpPluginTest : CarelevoPumpPluginTestBase() {
 
     @Test
     fun `loadTDDs should return result object`() {
-        assertThat(plugin.loadTDDs()).isNotNull()
+        assertThat(runBlocking { plugin.loadTDDs() }).isNotNull()
     }
 
     @Test

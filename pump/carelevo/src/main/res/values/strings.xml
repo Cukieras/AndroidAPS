@@ -36,6 +36,7 @@
     <string name="common_label_unit_dose_per_speed">U/hr</string>
     <string name="common_label_unit_value_dose_per_speed">%sU/hr</string>
     <string name="common_label_unit_value_dose_per_speed_with_space">%.2f U/hr</string>
+    <string name="carelevo_insulin_remain_value" comment="%1$s=insulin remaining with unit (e.g. 42.5 U), %2$s=total filled insulin with unit (e.g. 300 U). Shown on the overview as remaining / total.">%1$s / %2$s</string>
 
     <string name="carelevo_pump_resume_title">Would you like to resume infusion?</string>
     <string name="carelevo_pump_resume_description">Infusion will resume when you press Confirm.</string>

@@ -16,6 +16,7 @@ import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.rx.AapsSchedulers
 import app.aaps.core.interfaces.rx.bus.RxBus
 import app.aaps.core.interfaces.utils.DateUtil
+import app.aaps.core.interfaces.utils.Round
 import app.aaps.pump.carelevo.R
 import app.aaps.pump.carelevo.common.CarelevoPatch
 import app.aaps.pump.carelevo.domain.model.ResponseResult
@@ -39,9 +40,10 @@ import java.util.concurrent.TimeoutException
 import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Singleton
+import kotlin.jvm.Volatile
 import kotlin.jvm.optionals.getOrNull
-import kotlin.math.ceil
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 @Singleton
 class CarelevoBolusCoordinator @Inject constructor(
@@ -64,9 +66,10 @@ class CarelevoBolusCoordinator @Inject constructor(
     companion object {
 
         private const val STOP_BOLUS_TIME_OUT = 15_000L
+        private const val PROGRESS_POLL_MS = 100L
     }
 
-    private var isImmeBolusStop = false
+    @Volatile private var isImmeBolusStop = false
     private var bolusExpectMs: Long = 0
     private val _lastBolusTime = MutableStateFlow<Long?>(null)
     val lastBolusTime: StateFlow<Long?> = _lastBolusTime
@@ -268,51 +271,75 @@ class CarelevoBolusCoordinator @Inject constructor(
 
         val stepUnit = 0.05
         val totalInsulin = detailedInfo.insulin
-        val totalSteps = ceil(totalInsulin / stepUnit).toInt()
+        val totalSteps = (Round.ceilTo(totalInsulin, stepUnit) / stepUnit).roundToInt().coerceAtLeast(1)
 
         bolusExpectMs = data.expectSec * 1000L
         val delayMs = bolusExpectMs / totalSteps
 
-        (0..totalSteps).forEach { step ->
-            if (!isImmeBolusStop) {
-                if (step == totalSteps) {
-                    bolusProgressData.updateProgress(
-                        100,
-                        rh.gs(
-                            app.aaps.core.interfaces.R.string.bolus_delivered_successfully,
-                            detailedInfo.insulin.toFloat()
-                        ),
-                        PumpInsulin(detailedInfo.insulin)
-                    )
-                    runBlocking {
-                        pumpSync.syncBolusWithPumpId(
-                            detailedInfo.timestamp,
-                            PumpInsulin(detailedInfo.insulin),
-                            detailedInfo.bolusType,
-                            dateUtil.now(),
-                            PumpType.CAREMEDI_CARELEVO,
-                            serialNumber
-                        )
-                    }
-                    handleFinishImmeBolus(onLastDataUpdated, pluginDisposable)
-                } else {
-                    SystemClock.sleep(delayMs)
-                    val delivering = min(step * stepUnit, detailedInfo.insulin)
-                    val percent = if (totalInsulin <= 0.0) 0 else ((delivering / totalInsulin) * 100).toInt()
-                    bolusProgressData.updateProgress(
-                        percent,
-                        rh.gs(app.aaps.core.interfaces.R.string.bolus_delivering, delivering),
-                        PumpInsulin(delivering)
+        var completed = false
+        for (step in 0..totalSteps) {
+            // Cancellation-cooperative: break promptly when the user presses stop.
+            // isStopPressed is the core flag flipped the instant the user taps stop
+            // (CommandQueue.cancelAllBoluses), while isImmeBolusStop is only set later once the
+            // pump confirms the cancel. Poll both so the progress loop stops advancing immediately
+            // instead of only after the pump round-trip.
+            if (isImmeBolusStop || bolusProgressData.isStopPressed) break
+
+            if (step == totalSteps) {
+                bolusProgressData.updateProgress(
+                    100,
+                    rh.gs(
+                        app.aaps.core.interfaces.R.string.bolus_delivered_successfully,
+                        detailedInfo.insulin.toFloat()
+                    ),
+                    PumpInsulin(detailedInfo.insulin)
+                )
+                runBlocking {
+                    pumpSync.syncBolusWithPumpId(
+                        detailedInfo.timestamp,
+                        PumpInsulin(detailedInfo.insulin),
+                        detailedInfo.bolusType,
+                        dateUtil.now(),
+                        PumpType.CAREMEDI_CARELEVO,
+                        serialNumber
                     )
                 }
+                handleFinishImmeBolus(onLastDataUpdated, pluginDisposable)
+                completed = true
             } else {
-                return@forEach
+                // Sleep the per-step delay in short slices so a mid-step stop is honored within
+                // PROGRESS_POLL_MS rather than after the full delayMs (SystemClock.sleep is blocking
+                // and does not observe coroutine cancellation).
+                var slept = 0L
+                while (slept < delayMs && !isImmeBolusStop && !bolusProgressData.isStopPressed) {
+                    val chunk = min(PROGRESS_POLL_MS, delayMs - slept)
+                    SystemClock.sleep(chunk)
+                    slept += chunk
+                }
+                if (isImmeBolusStop || bolusProgressData.isStopPressed) break
+                val delivering = min(step * stepUnit, detailedInfo.insulin)
+                val percent = if (totalInsulin <= 0.0) 0 else ((delivering / totalInsulin) * 100).toInt()
+                bolusProgressData.updateProgress(
+                    percent,
+                    rh.gs(app.aaps.core.interfaces.R.string.bolus_delivering, delivering),
+                    PumpInsulin(delivering)
+                )
             }
         }
 
-        result.success = true
-        result.enacted = true
-        result.bolusDelivered = detailedInfo.insulin
+        if (completed) {
+            result.success = true
+            result.enacted = true
+            result.bolusDelivered = detailedInfo.insulin
+        } else {
+            // User stopped mid-bolus (loop broke before the finish step). The actual partial amount is
+            // recorded separately by stopBolusDeliveringInternal via syncBolusWithPumpId(infusedAmount),
+            // so don't report the full requested dose as delivered. Mirror VirtualPumpPlugin's stop contract.
+            result.success = false
+            result.enacted = false
+            result.bolusDelivered = 0.0
+            result.comment(rh.gs(app.aaps.core.ui.R.string.stop))
+        }
     }
 
     private fun handleBolusError(e: Throwable, result: PumpEnactResult) {
