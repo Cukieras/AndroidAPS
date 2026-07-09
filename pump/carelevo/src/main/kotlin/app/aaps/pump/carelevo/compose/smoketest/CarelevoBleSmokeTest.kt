@@ -24,9 +24,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import app.aaps.pump.carelevo.ble.BleClientImpl
+import app.aaps.pump.carelevo.ble.CarelevoBleTransport
 import app.aaps.pump.carelevo.ble.commands.MacAddressCommand
 import app.aaps.pump.carelevo.ble.commands.MacAddressResponse
-import app.aaps.pump.carelevo.ble.gatt.AndroidGattConnection
+import app.aaps.pump.carelevo.ble.gatt.BleTransportGattConnection
 import app.aaps.pump.carelevo.ble.gatt.GattConnState
 import app.aaps.pump.carelevo.ble.gatt.GattEvent
 import kotlinx.coroutines.CoroutineScope
@@ -42,11 +43,14 @@ import kotlin.time.Duration.Companion.seconds
  * End-to-end BLE smoke test that exercises the new protocol stack against real hardware.
  *
  * Flow:
- *   1. Look up the [targetMacAddress] via [BluetoothManager]
- *   2. Open an [AndroidGattConnection], wait for `CONNECTED`
- *   3. `discoverServices()` → `enableNotifications(txUuid)`
- *   4. Issue a [MacAddressCommand] via [BleClientImpl]
- *   5. Close the connection and return the decoded response
+ *   1. Wrap the injected [transport] in a [BleTransportGattConnection], connect, wait for `CONNECTED`
+ *   2. `discoverServices()` → `enableNotifications(txUuid)`
+ *   3. Issue a [MacAddressCommand] via [BleClientImpl]
+ *   4. Close the connection and return the decoded response
+ *
+ * Exercises the Phase-1 production stack end-to-end: the shared [CarelevoBleTransport]
+ * ([app.aaps.pump.carelevo.ble.CarelevoBleTransportImpl]) → the [BleTransportGattConnection] adapter
+ * → the unchanged [BleClientImpl] correlation layer.
  *
  * Every phase has a generous timeout — a hang on any of them indicates a bug in the
  * corresponding layer (Android wrapper, protocol correlation, or pump responsiveness).
@@ -62,6 +66,7 @@ import kotlin.time.Duration.Companion.seconds
 @SuppressLint("MissingPermission") // caller ensures BLUETOOTH_CONNECT is granted
 suspend fun runMacAddressSmokeTest(
     context: Context,
+    transport: CarelevoBleTransport,
     targetMacAddress: String,
     rxUuid: UUID,
     txUuid: UUID,
@@ -71,11 +76,12 @@ suspend fun runMacAddressSmokeTest(
     val adapter = manager.adapter ?: error("Bluetooth adapter unavailable")
     require(adapter.isEnabled) { "Bluetooth is disabled" }
 
-    val device = adapter.getRemoteDevice(targetMacAddress.uppercase())
-        ?: error("Could not resolve device for MAC $targetMacAddress")
+    val mac = targetMacAddress.uppercase()
+    transport.scanAddress = mac
 
-    val gatt = AndroidGattConnection.connect(context, device, scope)
+    val gatt = BleTransportGattConnection(transport, rxUuid, txUuid, scope)
     try {
+        require(gatt.connect(mac)) { "connectGatt refused (permission missing or unknown device)" }
         withTimeout(CONNECT_TIMEOUT) {
             gatt.events
                 .filterIsInstance<GattEvent.ConnectionStateChanged>()
@@ -102,11 +108,12 @@ private val REQUEST_TIMEOUT = 10.seconds
 /**
  * Self-contained debug dialog that wraps [runMacAddressSmokeTest] with a simple UI.
  *
- * Caller wires visibility via [onDismiss]. DI-free — takes the two UUIDs explicitly so
- * it can be dropped into any screen without adding to the Dagger graph.
+ * Caller wires visibility via [onDismiss] and supplies the [transport] (the injected
+ * [CarelevoBleTransport] singleton, e.g. from the screen's ViewModel) plus the two UUIDs.
  */
 @Composable
 fun CarelevoBleSmokeTestDialog(
+    transport: CarelevoBleTransport,
     rxUuid: UUID,
     txUuid: UUID,
     initialMacAddress: String = "",
@@ -149,6 +156,7 @@ fun CarelevoBleSmokeTestDialog(
                     scope.launch {
                         val outcome = runMacAddressSmokeTest(
                             context = context,
+                            transport = transport,
                             targetMacAddress = mac.trim(),
                             rxUuid = rxUuid,
                             txUuid = txUuid,

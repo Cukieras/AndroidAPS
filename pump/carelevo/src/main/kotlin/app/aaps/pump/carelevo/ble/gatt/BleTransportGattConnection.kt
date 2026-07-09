@@ -25,10 +25,11 @@ import java.util.UUID
  * - a [GattEvent] on the hot [events] flow (for [BleClient]'s notification routing and
  *   connection-state observers).
  *
- * Mirrors [AndroidGattConnection]'s internals; the only source difference is that events arrive via
- * [BleTransportListener] instead of a `BluetoothGattCallback`.
+ * Uses the same per-op [CompletableDeferred] + events-[SharedFlow] internals a raw `BluetoothGatt`
+ * wrapper would; the only source difference is that events arrive via [BleTransportListener] instead
+ * of a `BluetoothGattCallback`.
  *
- * **Semantic note vs [AndroidGattConnection]:** [BleTransportListener.onCharacteristicWritten] carries
+ * **Semantic note (write acks):** [BleTransportListener.onCharacteristicWritten] carries
  * no status, so a write the BLE stack silently drops is NOT fast-failed with [GattWriteException] —
  * it degrades to the caller's `withTimeout(...)`, which every [BleClient.request] already applies.
  * The *not-connected* case is still fast-failed (the transport calls `onConnectionStateChanged(false)`
@@ -40,9 +41,9 @@ import java.util.UUID
  * constructor UUIDs rather than used for routing — a mismatched UUID fails loudly instead of silently
  * targeting the wrong characteristic.
  *
- * Threading mirrors [AndroidGattConnection]: [gattMutex] serializes suspend ops; events are emitted on
- * [scope]; `CompletableDeferred.complete(...)` is thread-safe and called directly from the (binder
- * thread) listener callbacks.
+ * Threading: [gattMutex] serializes suspend ops; events are emitted on [scope];
+ * `CompletableDeferred.complete(...)` is thread-safe and called directly from the (binder thread)
+ * listener callbacks.
  *
  * One adapter instance owns the transport's single listener slot for one connection lifecycle;
  * [close] releases it.
@@ -95,7 +96,7 @@ class BleTransportGattConnection(
     ) = gattMutex.withLock {
         // Self-guard: after close() the transport listener is null, so the not-connected callback
         // below can no longer abort the deferred — fail fast instead of hanging until the caller's
-        // withTimeout (mirrors AndroidGattConnection's `gatt ?: throw`).
+        // withTimeout.
         if (closed) throw GattWriteException("connection closed")
         require(uuid == writeUuid) { "unexpected write characteristic $uuid; transport has a single write char $writeUuid" }
         val deferred = CompletableDeferred<Boolean>()

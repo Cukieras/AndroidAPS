@@ -7,7 +7,7 @@ import app.aaps.core.interfaces.pump.ble.BleTransport
  *
  * Adopting [BleTransport] (the same abstraction Dana/Equil/Medtrum run on) is a code-unification
  * step: the coroutine correlation layer stays in [BleClient]; only the transport underneath is
- * swapped from the bespoke `AndroidGattConnection` to this shared contract. See
+ * swapped from a bespoke `BluetoothGatt` wrapper to this shared contract. See
  * `_docs/carelevo-new-ble-stack.md` for the migration plan.
  *
  * Adds the two fields the fleet impls carry that aren't part of the generic interface:

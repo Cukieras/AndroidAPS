@@ -46,6 +46,7 @@ internal fun CarelevoPatchFlowStep01Start(
 
     if (showSmokeTestDialog) {
         CarelevoBleSmokeTestDialog(
+            transport = viewModel.bleTransport,
             rxUuid = UUID.fromString(BleEnvConfig.BLE_RX_CHAR_UUID),
             txUuid = UUID.fromString(BleEnvConfig.BLE_TX_CHAR_UUID),
             onDismiss = { showSmokeTestDialog = false }

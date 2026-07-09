@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.rx.AapsSchedulers
+import app.aaps.pump.carelevo.ble.CarelevoBleTransport
 import app.aaps.pump.carelevo.ble.core.CarelevoBleController
 import app.aaps.pump.carelevo.common.CarelevoPatch
 import app.aaps.pump.carelevo.common.MutableEventFlow
@@ -38,6 +39,8 @@ class CarelevoPatchConnectionFlowViewModel @Inject constructor(
     private val aapsSchedulers: AapsSchedulers,
     private val carelevoPatch: CarelevoPatch,
     private val bleController: CarelevoBleController,
+    /** Exposed for the dev BLE smoke test (Phase-1 transport validation). */
+    val bleTransport: CarelevoBleTransport,
     private val patchObserver: CarelevoPatchObserver,
     private val patchDiscardUseCase: CarelevoPatchDiscardUseCase,
     private val patchForceDiscardUseCase: CarelevoPatchForceDiscardUseCase,
