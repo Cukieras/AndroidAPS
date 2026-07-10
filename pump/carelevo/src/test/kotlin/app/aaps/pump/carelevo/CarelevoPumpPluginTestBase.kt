@@ -24,6 +24,7 @@ import app.aaps.pump.carelevo.ble.core.CarelevoBleController
 import app.aaps.pump.carelevo.common.CarelevoAlarmNotifier
 import app.aaps.pump.carelevo.common.CarelevoPatch
 import app.aaps.pump.carelevo.common.model.PatchState
+import app.aaps.pump.carelevo.command.CarelevoActivationExecutor
 import app.aaps.pump.carelevo.coordinator.CarelevoBasalProfileUpdateCoordinator
 import app.aaps.pump.carelevo.coordinator.CarelevoBolusCoordinator
 import app.aaps.pump.carelevo.coordinator.CarelevoConnectionCoordinator
@@ -97,6 +98,7 @@ abstract class CarelevoPumpPluginTestBase {
     @Mock lateinit var carelevoProtocolParserRegister: CarelevoProtocolParserRegister
     @Mock lateinit var carelevoPatch: CarelevoPatch
     @Mock lateinit var bleController: CarelevoBleController
+    @Mock lateinit var activationExecutor: CarelevoActivationExecutor
 
     @Mock lateinit var setBasalProgramUseCase: CarelevoSetBasalProgramUseCase
     @Mock lateinit var updateBasalProgramUseCase: CarelevoUpdateBasalProgramUseCase
@@ -249,7 +251,8 @@ abstract class CarelevoPumpPluginTestBase {
             bolusCoordinator = bolusCoordinator,
             tempBasalCoordinator = tempBasalCoordinator,
             connectionCoordinator = connectionCoordinator,
-            settingsCoordinator = settingsCoordinator
+            settingsCoordinator = settingsCoordinator,
+            activationExecutor = activationExecutor
         )
         plugin.javaClass.getDeclaredField("txUuid").apply {
             isAccessible = true

@@ -4,8 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
+import app.aaps.core.interfaces.queue.CommandQueue
 import app.aaps.core.interfaces.rx.AapsSchedulers
 import app.aaps.pump.carelevo.ble.core.CarelevoBleController
+import app.aaps.pump.carelevo.command.CarelevoActivationExecutor
+import app.aaps.pump.carelevo.command.CmdAdditionalPriming
+import app.aaps.pump.carelevo.command.CmdDiscard
+import app.aaps.pump.carelevo.command.CmdSafetyCheck
 import app.aaps.pump.carelevo.common.CarelevoPatch
 import app.aaps.pump.carelevo.common.MutableEventFlow
 import app.aaps.pump.carelevo.common.asEventFlow
@@ -15,10 +20,7 @@ import app.aaps.pump.carelevo.common.model.State
 import app.aaps.pump.carelevo.common.model.UiState
 import app.aaps.pump.carelevo.domain.model.ResponseResult
 import app.aaps.pump.carelevo.domain.type.SafetyProgress
-import app.aaps.pump.carelevo.domain.usecase.patch.CarelevoPatchAdditionalPrimingUseCase
-import app.aaps.pump.carelevo.domain.usecase.patch.CarelevoPatchDiscardUseCase
 import app.aaps.pump.carelevo.domain.usecase.patch.CarelevoPatchForceDiscardUseCase
-import app.aaps.pump.carelevo.domain.usecase.patch.CarelevoPatchSafetyCheckUseCase
 import app.aaps.pump.carelevo.presentation.model.CarelevoConnectSafetyCheckEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.reactivex.rxjava3.core.Observable
@@ -38,10 +40,9 @@ class CarelevoPatchSafetyCheckViewModel @Inject constructor(
     private val aapsLogger: AAPSLogger,
     private val bleController: CarelevoBleController,
     private val carelevoPatch: CarelevoPatch,
-    private val patchSafetyCheckUseCase: CarelevoPatchSafetyCheckUseCase,
-    private val patchDiscardUseCase: CarelevoPatchDiscardUseCase,
-    private val patchForceDiscardUseCase: CarelevoPatchForceDiscardUseCase,
-    private val patchAdditionalPrimingUseCase: CarelevoPatchAdditionalPrimingUseCase
+    private val commandQueue: CommandQueue,
+    private val activationExecutor: CarelevoActivationExecutor,
+    private val patchForceDiscardUseCase: CarelevoPatchForceDiscardUseCase
 ) : ViewModel() {
 
     private var _isCreated = false
@@ -102,46 +103,33 @@ class CarelevoPatchSafetyCheckViewModel @Inject constructor(
             return
         }
 
-        if (!carelevoPatch.isCarelevoConnected()) {
-            triggerEvent(CarelevoConnectSafetyCheckEvent.ShowMessageCarelevoIsNotConnected)
-            return
-        }
-
+        // Route through the CommandQueue: it reconnects if the link dropped, runs the check on the
+        // queue thread, and returns a real success/fail result (no more silent no-op on a dead link).
         triggerEvent(CarelevoConnectSafetyCheckEvent.SafetyCheckProgress)
-        compositeDisposable += patchSafetyCheckUseCase.execute()
-            .subscribeOn(aapsSchedulers.io)
-            .observeOn(aapsSchedulers.main)
-            .doOnError {
-                triggerEvent(CarelevoConnectSafetyCheckEvent.SafetyCheckFailed)
-            }
-            .doFinally {
-
-            }
-            .subscribe { response ->
-                when (response) {
-                    is SafetyProgress.Progress -> {
-                        aapsLogger.debug(LTag.PUMPCOMM, "response SafetyProgress.Progress - ${response.timeoutSec}")
-                        currentTimeoutSec = maxOf(1L, response.timeoutSec)
+        viewModelScope.launch {
+            val progressJob = launch {
+                activationExecutor.safetyProgress.collect { progress ->
+                    if (progress is SafetyProgress.Progress) {
+                        currentTimeoutSec = maxOf(1L, progress.timeoutSec)
                         _progress.value = 0
                         _remainSec.value = currentTimeoutSec
                         startTicker(currentTimeoutSec)
                     }
-
-                    is SafetyProgress.Success  -> {
-                        aapsLogger.debug(LTag.PUMPCOMM, "response SafetyProgress.Success")
-                        stopTicker()
-                        _progress.value = 100
-                        _remainSec.value = 0
-
-                        triggerEvent(CarelevoConnectSafetyCheckEvent.SafetyCheckComplete)
-                    }
-
-                    is SafetyProgress.Error    -> {
-                        aapsLogger.error(LTag.PUMPCOMM, "response SafetyProgress.Error")
-                        triggerEvent(CarelevoConnectSafetyCheckEvent.SafetyCheckFailed)
-                    }
                 }
             }
+            val result = commandQueue.customCommand(CmdSafetyCheck())
+            progressJob.cancel()
+            stopTicker()
+            if (result.success) {
+                aapsLogger.debug(LTag.PUMPCOMM, "safety check success")
+                _progress.value = 100
+                _remainSec.value = 0
+                triggerEvent(CarelevoConnectSafetyCheckEvent.SafetyCheckComplete)
+            } else {
+                aapsLogger.error(LTag.PUMPCOMM, "safety check failed")
+                triggerEvent(CarelevoConnectSafetyCheckEvent.SafetyCheckFailed)
+            }
+        }
     }
 
     private fun startTicker(sec: Long) {
@@ -171,53 +159,28 @@ class CarelevoPatchSafetyCheckViewModel @Inject constructor(
 
     fun startDiscardProcess() {
         when (carelevoPatch.patchState.value?.getOrNull()) {
-            is PatchState.ConnectedBooted              -> {
-                startDiscard()
-            }
-
             is PatchState.NotConnectedNotBooting, null -> {
                 triggerEvent(CarelevoConnectSafetyCheckEvent.DiscardComplete)
             }
 
             else                                       -> {
-                startForceDiscard()
-            }
-        }
-    }
-
-    private fun startDiscard() {
-        setUiState(UiState.Loading)
-        compositeDisposable += patchDiscardUseCase.execute()
-            .timeout(3000L, TimeUnit.MILLISECONDS)
-            .subscribeOn(aapsSchedulers.io)
-            .observeOn(aapsSchedulers.main)
-            .doOnError {
-                aapsLogger.error(LTag.PUMPCOMM, "doOnError called : $it")
-                setUiState(UiState.Idle)
-                triggerEvent(CarelevoConnectSafetyCheckEvent.DiscardFailed)
-            }.subscribe { response ->
-                when (response) {
-                    is ResponseResult.Success -> {
-                        aapsLogger.debug(LTag.PUMPCOMM, "response success")
+                // Route the BLE stop through the queue (reconnect-before-execute); if the patch can't
+                // be reached at all, fall back to the DB-only force-discard.
+                setUiState(UiState.Loading)
+                viewModelScope.launch {
+                    val result = commandQueue.customCommand(CmdDiscard())
+                    if (result.success) {
                         bleController.unBondDevice()
                         carelevoPatch.releasePatch()
                         setUiState(UiState.Idle)
                         triggerEvent(CarelevoConnectSafetyCheckEvent.DiscardComplete)
-                    }
-
-                    is ResponseResult.Error   -> {
-                        aapsLogger.error(LTag.PUMPCOMM, "response error : ${response.e}")
-                        setUiState(UiState.Idle)
-                        triggerEvent(CarelevoConnectSafetyCheckEvent.DiscardFailed)
-                    }
-
-                    else                      -> {
-                        aapsLogger.error(LTag.PUMPCOMM, "response failed")
-                        setUiState(UiState.Idle)
-                        triggerEvent(CarelevoConnectSafetyCheckEvent.DiscardFailed)
+                    } else {
+                        aapsLogger.error(LTag.PUMPCOMM, "discard failed, falling back to force-discard")
+                        startForceDiscard()
                     }
                 }
             }
+        }
     }
 
     private fun startForceDiscard() {
@@ -261,36 +224,17 @@ class CarelevoPatchSafetyCheckViewModel @Inject constructor(
             return
         }
 
-        if (!carelevoPatch.isCarelevoConnected()) {
-            triggerEvent(CarelevoConnectSafetyCheckEvent.ShowMessageCarelevoIsNotConnected)
-            return
-        }
-
         setUiState(UiState.Loading)
-        compositeDisposable += patchAdditionalPrimingUseCase.execute()
-            .timeout(60, TimeUnit.SECONDS)
-            .subscribeOn(aapsSchedulers.io)
-            .observeOn(aapsSchedulers.main)
-            .doOnError {
-                aapsLogger.error(LTag.PUMPCOMM, "doOnError called : $it")
-                setUiState(UiState.Idle)
+        // Routed through the CommandQueue (connect/reconnect-before-execute). Best-effort re-prime to
+        // push a droplet out; on failure surface feedback rather than silently going idle.
+        viewModelScope.launch {
+            val result = commandQueue.customCommand(CmdAdditionalPriming())
+            setUiState(UiState.Idle)
+            if (!result.success) {
+                aapsLogger.error(LTag.PUMPCOMM, "additional priming failed")
                 triggerEvent(CarelevoConnectSafetyCheckEvent.DiscardFailed)
-            }.subscribe { response ->
-                when (response) {
-                    is ResponseResult.Success -> {
-                        aapsLogger.debug(LTag.PUMPCOMM, "response success")
-                    }
-
-                    is ResponseResult.Error   -> {
-                        aapsLogger.error(LTag.PUMPCOMM, "response error : ${response.e}")
-                    }
-
-                    else                      -> {
-                        aapsLogger.error(LTag.PUMPCOMM, "response failed")
-                    }
-                }
-                setUiState(UiState.Idle)
             }
+        }
     }
 
     fun isSafetyCheckPassed() = carelevoPatch.patchInfo.value?.getOrNull()?.checkSafety == true

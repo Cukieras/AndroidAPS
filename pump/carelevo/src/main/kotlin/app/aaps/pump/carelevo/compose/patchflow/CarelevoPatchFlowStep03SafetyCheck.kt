@@ -1,16 +1,12 @@
 package app.aaps.pump.carelevo.compose.patchflow
 
-import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -24,16 +20,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import app.aaps.core.ui.compose.LocalSnackbarHostState
+import app.aaps.core.ui.compose.AapsSpacing
+import app.aaps.core.ui.compose.banner.ErrorBanner
+import app.aaps.core.ui.compose.pump.WizardButton
+import app.aaps.core.ui.compose.pump.WizardStepLayout
 import app.aaps.pump.carelevo.R
 import app.aaps.pump.carelevo.compose.dialog.CarelevoActionDialog
 import app.aaps.pump.carelevo.presentation.model.CarelevoConnectSafetyCheckEvent
-import app.aaps.pump.carelevo.presentation.type.CarelevoPatchStep
 import app.aaps.pump.carelevo.presentation.viewmodel.CarelevoPatchConnectionFlowViewModel
 import app.aaps.pump.carelevo.presentation.viewmodel.CarelevoPatchSafetyCheckViewModel
 
@@ -43,17 +40,10 @@ internal fun CarelevoPatchFlowStep03SafetyCheck(
     sharedViewModel: CarelevoPatchConnectionFlowViewModel,
     onExitFlow: () -> Unit
 ) {
-    val context = LocalContext.current
     val progress by viewModel.progress.collectAsStateWithLifecycle()
     val remainSec by viewModel.remainSec.collectAsStateWithLifecycle()
-    val snackbarHostState = LocalSnackbarHostState.current
-    val bluetoothNotEnabledMessage = stringResource(R.string.carelevo_toast_msg_bluetooth_not_enabled)
-    val notConnectedMessage = stringResource(R.string.carelevo_toast_msg_not_connected_waiting_retry)
-    val safetyCheckSuccessMessage = stringResource(R.string.carelevo_toast_msg_safety_check_success)
-    val safetyCheckFailedMessage = stringResource(R.string.carelevo_toast_msg_safety_check_failed)
-    val discardCompleteMessage = stringResource(R.string.carelevo_toast_msg_discard_complete)
-    val discardFailedMessage = stringResource(R.string.carelevo_toast_msg_discard_failed)
     var showDiscardDialog by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<Int?>(null) }
     var safetyCheckState by remember(viewModel) {
         mutableStateOf(
             if (viewModel.isSafetyCheckPassed()) {
@@ -77,35 +67,36 @@ internal fun CarelevoPatchFlowStep03SafetyCheck(
         viewModel.event.collect { event ->
             when (event) {
                 CarelevoConnectSafetyCheckEvent.ShowMessageBluetoothNotEnabled    -> {
-                    snackbarHostState.showSnackbar(bluetoothNotEnabledMessage)
+                    errorMessage = R.string.carelevo_toast_msg_bluetooth_not_enabled
                 }
 
                 CarelevoConnectSafetyCheckEvent.ShowMessageCarelevoIsNotConnected -> {
-                    snackbarHostState.showSnackbar(notConnectedMessage)
+                    errorMessage = R.string.carelevo_toast_msg_not_connected_waiting_retry
                 }
 
                 CarelevoConnectSafetyCheckEvent.SafetyCheckProgress               -> {
+                    errorMessage = null
                     safetyCheckState = SafetyCheckUiState.Progress
                 }
 
                 CarelevoConnectSafetyCheckEvent.SafetyCheckComplete               -> {
+                    errorMessage = null
                     safetyCheckState = SafetyCheckUiState.Success
-                    snackbarHostState.showSnackbar(safetyCheckSuccessMessage)
                 }
 
                 CarelevoConnectSafetyCheckEvent.SafetyCheckFailed                 -> {
-                    snackbarHostState.showSnackbar(safetyCheckFailedMessage)
+                    errorMessage = R.string.carelevo_toast_msg_safety_check_failed
+                    safetyCheckState = SafetyCheckUiState.Ready
                 }
 
                 CarelevoConnectSafetyCheckEvent.DiscardComplete                   -> {
                     showDiscardDialog = false
-                    Toast.makeText(context, discardCompleteMessage, Toast.LENGTH_SHORT).show()
                     onExitFlow()
                 }
 
                 CarelevoConnectSafetyCheckEvent.DiscardFailed                     -> {
                     showDiscardDialog = false
-                    snackbarHostState.showSnackbar(discardFailedMessage)
+                    errorMessage = R.string.carelevo_toast_msg_discard_failed
                 }
 
                 CarelevoConnectSafetyCheckEvent.NoAction                          -> Unit
@@ -140,7 +131,6 @@ internal fun CarelevoPatchFlowStep03SafetyCheck(
         SafetyCheckUiState.Success  -> R.string.carelevo_patch_safety_check_end_desc
     }
 
-    safetyCheckState != SafetyCheckUiState.Ready
     val nextEnabled = safetyCheckState == SafetyCheckUiState.Success
     val showSafetyCheckButton = safetyCheckState == SafetyCheckUiState.Ready
     val showRetrySection = safetyCheckState == SafetyCheckUiState.Success
@@ -149,16 +139,23 @@ internal fun CarelevoPatchFlowStep03SafetyCheck(
     CarelevoPatchFlowStep03SafetyCheckContent(
         titleRes = titleRes,
         descRes = descRes,
+        errorMessage = errorMessage,
         progress = progress,
         remainSec = remainSec,
         showProgressDetails = showProgressDetails,
         showRetrySection = showRetrySection,
         showSafetyCheckButton = showSafetyCheckButton,
         nextEnabled = nextEnabled,
-        onRetryClick = { viewModel.retryAdditionalPriming() },
+        onRetryClick = {
+            errorMessage = null
+            viewModel.retryAdditionalPriming()
+        },
         onDiscardClick = { showDiscardDialog = true },
-        onSafetyCheckClick = { viewModel.startSafetyCheck() },
-        onNextClick = { sharedViewModel.setPage(CarelevoPatchStep.PATCH_ATTACH) }
+        onSafetyCheckClick = {
+            errorMessage = null
+            viewModel.startSafetyCheck()
+        },
+        onNextClick = { sharedViewModel.advanceFromSafetyCheck() }
     )
 }
 
@@ -166,6 +163,7 @@ internal fun CarelevoPatchFlowStep03SafetyCheck(
 private fun CarelevoPatchFlowStep03SafetyCheckContent(
     titleRes: Int,
     descRes: Int,
+    errorMessage: Int?,
     progress: Int?,
     remainSec: Long?,
     showProgressDetails: Boolean,
@@ -177,106 +175,79 @@ private fun CarelevoPatchFlowStep03SafetyCheckContent(
     onSafetyCheckClick: () -> Unit,
     onNextClick: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.SpaceBetween
+    WizardStepLayout(
+        primaryButton = if (showSafetyCheckButton) {
+            WizardButton(
+                text = stringResource(R.string.carelevo_btn_safety_check),
+                onClick = onSafetyCheckClick
+            )
+        } else {
+            WizardButton(
+                text = stringResource(R.string.carelevo_btn_next),
+                onClick = onNextClick,
+                enabled = nextEnabled
+            )
+        },
+        secondaryButton = WizardButton(
+            text = stringResource(R.string.carelevo_btn_patch_expiration),
+            onClick = onDiscardClick
+        )
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                text = stringResource(titleRes),
-                style = MaterialTheme.typography.titleMedium
-            )
-            Text(
-                text = stringResource(descRes),
-                style = MaterialTheme.typography.bodyMedium
-            )
-            LinearProgressIndicator(
-                progress = { if (showProgressDetails) (progress ?: 0) / 100f else 0f },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(10.dp)
-            )
-            if (showProgressDetails && (remainSec != null || progress != null)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = remainTimeText(remainSec),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Text(
-                        text = progressText(progress),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            }
-            if (showRetrySection) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Warning,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.tertiary
-                    )
-                    Text(
-                        text = stringResource(R.string.carelevo_patch_safety_check_desc_warning),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.tertiary
-                    )
-                }
+        errorMessage?.let { ErrorBanner(message = stringResource(it)) }
+        Text(
+            text = stringResource(titleRes),
+            style = MaterialTheme.typography.titleMedium
+        )
+        Text(
+            text = stringResource(descRes),
+            style = MaterialTheme.typography.bodyMedium
+        )
+        LinearProgressIndicator(
+            progress = { if (showProgressDetails) (progress ?: 0) / 100f else 0f },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(10.dp)
+        )
+        if (showProgressDetails && (remainSec != null || progress != null)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
                 Text(
-                    text = stringResource(R.string.carelevo_patch_safety_check_retry_desc),
+                    text = remainTimeText(remainSec),
                     style = MaterialTheme.typography.bodyMedium
                 )
-                Button(
-                    onClick = onRetryClick,
-                    modifier = Modifier.wrapContentWidth()
-                ) {
-                    Text(text = stringResource(R.string.carelevo_btn_retry))
-                }
+                Text(
+                    text = progressText(progress),
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
         }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Button(
-                onClick = onDiscardClick,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(60.dp)
+        if (showRetrySection) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(AapsSpacing.small)
             ) {
-                PatchFlowButtonText(text = stringResource(R.string.carelevo_btn_patch_expiration))
+                Icon(
+                    imageVector = Icons.Filled.Info,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = stringResource(R.string.carelevo_patch_safety_check_desc_warning),
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
-            if (showSafetyCheckButton) {
-                Button(
-                    onClick = onSafetyCheckClick,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(60.dp)
-                ) {
-                    PatchFlowButtonText(text = stringResource(R.string.carelevo_btn_safety_check))
-                }
-            } else {
-                Button(
-                    onClick = onNextClick,
-                    enabled = nextEnabled,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(60.dp)
-                ) {
-                    PatchFlowButtonText(text = stringResource(R.string.carelevo_btn_next))
-                }
+            Text(
+                text = stringResource(R.string.carelevo_patch_safety_check_retry_desc),
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Button(
+                onClick = onRetryClick,
+                modifier = Modifier.wrapContentWidth()
+            ) {
+                Text(text = stringResource(R.string.carelevo_btn_retry))
             }
         }
     }
@@ -306,6 +277,7 @@ private fun CarelevoPatchFlowStep03SafetyCheckReadyPreview() {
         CarelevoPatchFlowStep03SafetyCheckContent(
             titleRes = R.string.carelevo_patch_safety_check_start_title,
             descRes = R.string.carelevo_patch_safety_check_start_desc,
+            errorMessage = null,
             progress = 0,
             remainSec = 180,
             showProgressDetails = false,
@@ -327,6 +299,7 @@ private fun CarelevoPatchFlowStep03SafetyCheckSuccessPreview() {
         CarelevoPatchFlowStep03SafetyCheckContent(
             titleRes = R.string.carelevo_patch_safety_check_end_title,
             descRes = R.string.carelevo_patch_safety_check_end_desc,
+            errorMessage = null,
             progress = 100,
             remainSec = 0,
             showProgressDetails = true,

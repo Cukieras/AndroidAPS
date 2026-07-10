@@ -1,6 +1,5 @@
 package app.aaps.pump.carelevo.compose.patchflow
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,14 +14,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.aaps.core.ui.compose.LocalSnackbarHostState
 import app.aaps.core.ui.compose.ToolbarConfig
+import app.aaps.core.ui.compose.pump.ProfileGateWizardStep
 import app.aaps.core.ui.compose.pump.WizardScreen
+import app.aaps.core.ui.compose.siteRotation.SiteLocationWizardStep
 import app.aaps.pump.carelevo.R
 import app.aaps.pump.carelevo.common.model.UiState
 import app.aaps.pump.carelevo.presentation.model.CarelevoConnectEvent
@@ -52,33 +52,25 @@ private fun CarelevoPatchConnectionFlowScreen(
     setToolbarConfig: (ToolbarConfig) -> Unit,
     onExitFlow: () -> Unit
 ) {
-    val context = LocalContext.current
     val viewModel: CarelevoPatchConnectionFlowViewModel = hiltViewModel()
     val connectViewModel: CarelevoPatchConnectViewModel = hiltViewModel()
     val needleInsertionViewModel: CarelevoPatchNeedleInsertionViewModel = hiltViewModel()
     val safetyCheckViewModel: CarelevoPatchSafetyCheckViewModel = hiltViewModel()
     val page by viewModel.page.collectAsStateWithLifecycle()
+    val totalSteps by viewModel.totalSteps.collectAsStateWithLifecycle()
+    val currentStepIndex by viewModel.currentStepIndex.collectAsStateWithLifecycle()
     val sharedUiState by viewModel.uiState.collectAsStateWithLifecycle()
     val connectUiState by connectViewModel.uiState.collectAsStateWithLifecycle()
     val needleInsertionUiState by needleInsertionViewModel.uiState.collectAsStateWithLifecycle()
     val safetyCheckUiState by safetyCheckViewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = LocalSnackbarHostState.current
-    val discardCompleteMessage = stringResource(R.string.carelevo_toast_msg_discard_complete)
     val discardFailedMessage = stringResource(R.string.carelevo_toast_msg_discard_failed)
 
     LaunchedEffect(viewModel) {
         if (!viewModel.isCreated) {
             viewModel.observePatchEvent()
+            viewModel.initWorkflow(screenType)
             viewModel.setIsCreated(true)
-        }
-        if (screenType == CarelevoScreenType.CONNECTION_FLOW_START) {
-            viewModel.setPage(CarelevoPatchStep.PATCH_START)
-        }
-        if (screenType == CarelevoScreenType.SAFETY_CHECK) {
-            viewModel.setPage(CarelevoPatchStep.SAFETY_CHECK)
-        }
-        if (screenType == CarelevoScreenType.NEEDLE_INSERTION) {
-            viewModel.setPage(CarelevoPatchStep.PATCH_ATTACH)
         }
     }
 
@@ -91,14 +83,13 @@ private fun CarelevoPatchConnectionFlowScreen(
     LaunchedEffect(viewModel) {
         viewModel.event.collect { event ->
             when (event) {
-                CarelevoConnectEvent.DiscardComplete -> {
-                    Toast.makeText(context, discardCompleteMessage, Toast.LENGTH_SHORT).show()
-                    onExitFlow()
-                }
+                CarelevoConnectEvent.DiscardComplete -> onExitFlow()
 
                 CarelevoConnectEvent.DiscardFailed   -> {
                     snackbarHostState.showSnackbar(discardFailedMessage)
                 }
+
+                CarelevoConnectEvent.ExitFlow        -> onExitFlow()
 
                 else                                 -> Unit
             }
@@ -108,12 +99,11 @@ private fun CarelevoPatchConnectionFlowScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp)
     ) {
         WizardScreen(
             currentStep = page,
-            totalSteps = CarelevoPatchStep.entries.size,
-            currentStepIndex = page.ordinal,
+            totalSteps = totalSteps,
+            currentStepIndex = currentStepIndex,
             canGoBack = true,
             onBack = { viewModel.startPatchDiscardProcess() },
             cancelDialogTitle = stringResource(R.string.carelevo_dialog_patch_discard_message_title),
@@ -122,11 +112,23 @@ private fun CarelevoPatchConnectionFlowScreen(
             setToolbarConfig = setToolbarConfig,
         ) { step, _ ->
             when (step) {
+                CarelevoPatchStep.PROFILE_GATE     -> {
+                    ProfileGateWizardStep(host = viewModel)
+                }
+
+                CarelevoPatchStep.SELECT_INSULIN   -> {
+                    CarelevoSelectInsulinStep(viewModel = viewModel)
+                }
+
                 CarelevoPatchStep.PATCH_START      -> {
                     CarelevoPatchFlowStep01Start(
                         viewModel = viewModel,
                         onExitFlow = onExitFlow
                     )
+                }
+
+                CarelevoPatchStep.SET_AMOUNT       -> {
+                    CarelevoSetAmountStep(viewModel = viewModel)
                 }
 
                 CarelevoPatchStep.PATCH_CONNECT    -> {
@@ -143,6 +145,10 @@ private fun CarelevoPatchConnectionFlowScreen(
                         sharedViewModel = viewModel,
                         onExitFlow = onExitFlow
                     )
+                }
+
+                CarelevoPatchStep.SITE_LOCATION    -> {
+                    SiteLocationWizardStep(host = viewModel)
                 }
 
                 CarelevoPatchStep.PATCH_ATTACH     -> {

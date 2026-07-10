@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
+import app.aaps.core.interfaces.queue.CommandQueue
 import app.aaps.core.interfaces.rx.AapsSchedulers
 import app.aaps.core.interfaces.sharedPreferences.SP
 import app.aaps.pump.carelevo.ble.CarelevoBleSource
@@ -24,6 +25,7 @@ import app.aaps.pump.carelevo.ble.data.isReInitialized
 import app.aaps.pump.carelevo.ble.data.shouldBeConnected
 import app.aaps.pump.carelevo.ble.data.shouldBeDiscovered
 import app.aaps.pump.carelevo.ble.data.shouldBeNotificationEnabled
+import app.aaps.pump.carelevo.command.CmdDiscard
 import app.aaps.pump.carelevo.common.CarelevoPatch
 import app.aaps.pump.carelevo.common.MutableEventFlow
 import app.aaps.pump.carelevo.common.asEventFlow
@@ -35,7 +37,6 @@ import app.aaps.pump.carelevo.common.model.State
 import app.aaps.pump.carelevo.common.model.UiState
 import app.aaps.pump.carelevo.domain.model.ResponseResult
 import app.aaps.pump.carelevo.domain.usecase.patch.CarelevoConnectNewPatchUseCase
-import app.aaps.pump.carelevo.domain.usecase.patch.CarelevoPatchDiscardUseCase
 import app.aaps.pump.carelevo.domain.usecase.patch.CarelevoPatchForceDiscardUseCase
 import app.aaps.pump.carelevo.domain.usecase.patch.model.CarelevoConnectNewPatchRequestModel
 import app.aaps.pump.carelevo.presentation.model.CarelevoConnectPrepareEvent
@@ -58,9 +59,9 @@ class CarelevoPatchConnectViewModel @Inject constructor(
     private val aapsSchedulers: AapsSchedulers,
     private val carelevoPatch: CarelevoPatch,
     private val bleController: CarelevoBleController,
+    private val commandQueue: CommandQueue,
     private val sp: SP,
     private val connectNewPatchUseCase: CarelevoConnectNewPatchUseCase,
-    private val patchDiscardUseCase: CarelevoPatchDiscardUseCase,
     private val patchForceDiscardUseCase: CarelevoPatchForceDiscardUseCase,
     @Named("characterTx") private val txUuid: UUID
 ) : ViewModel() {
@@ -168,53 +169,28 @@ class CarelevoPatchConnectViewModel @Inject constructor(
 
     fun startPatchDiscardProcess() {
         when (carelevoPatch.patchState.value?.getOrNull()) {
-            is PatchState.ConnectedBooted              -> {
-                startPatchDiscard()
-            }
-
             is PatchState.NotConnectedNotBooting, null -> {
                 triggerEvent(CarelevoConnectPrepareEvent.DiscardComplete)
             }
 
             else                                       -> {
-                startPatchForceDiscard()
-            }
-        }
-    }
-
-    private fun startPatchDiscard() {
-        setUiState(UiState.Loading)
-        compositeDisposable += patchDiscardUseCase.execute()
-            .timeout(3000L, TimeUnit.MILLISECONDS)
-            .observeOn(aapsSchedulers.io)
-            .subscribeOn(aapsSchedulers.io)
-            .doOnError {
-                aapsLogger.debug(LTag.PUMPCOMM, "doOnError called : $it")
-                setUiState(UiState.Idle)
-                triggerEvent(CarelevoConnectPrepareEvent.DiscardFailed)
-            }.subscribe { response ->
-                when (response) {
-                    is ResponseResult.Success -> {
-                        aapsLogger.debug(LTag.PUMPCOMM, "response success")
+                // Route the BLE stop through the queue (reconnect-before-execute); if the patch can't
+                // be reached at all, fall back to the DB-only force-discard.
+                setUiState(UiState.Loading)
+                viewModelScope.launch {
+                    val result = commandQueue.customCommand(CmdDiscard())
+                    if (result.success) {
                         bleController.unBondDevice()
                         carelevoPatch.releasePatch()
                         setUiState(UiState.Idle)
                         triggerEvent(CarelevoConnectPrepareEvent.DiscardComplete)
-                    }
-
-                    is ResponseResult.Error   -> {
-                        aapsLogger.debug(LTag.PUMPCOMM, "response error : ${response.e}")
-                        setUiState(UiState.Idle)
-                        triggerEvent(CarelevoConnectPrepareEvent.DiscardFailed)
-                    }
-
-                    else                      -> {
-                        aapsLogger.debug(LTag.PUMPCOMM, "response failed")
-                        setUiState(UiState.Idle)
-                        triggerEvent(CarelevoConnectPrepareEvent.DiscardFailed)
+                    } else {
+                        aapsLogger.error(LTag.PUMPCOMM, "discard failed, falling back to force-discard")
+                        startPatchForceDiscard()
                     }
                 }
             }
+        }
     }
 
     private fun startPatchForceDiscard() {

@@ -1,28 +1,20 @@
-package app.aaps.pump.carelevo.compose.dialog
+package app.aaps.pump.carelevo.compose.patchflow
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -38,81 +30,60 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import app.aaps.core.ui.R as CoreUiR
+import app.aaps.core.ui.compose.pump.WizardButton
+import app.aaps.core.ui.compose.pump.WizardStepLayout
 import app.aaps.pump.carelevo.R
+import app.aaps.pump.carelevo.presentation.viewmodel.CarelevoPatchConnectionFlowViewModel
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Wizard step for choosing the insulin fill amount. Replaces the former bottom sheet so the choice
+ * stays on the wizard rails (progress indicator, Next/Cancel). The wheel picker is non-scrolling
+ * content, so [WizardStepLayout] is used with `scrollable = false`.
+ */
 @Composable
-internal fun CarelevoInsulinAmountPickerSheet(
-    initialValue: Int,
-    onDismissRequest: () -> Unit,
-    onConfirm: (Int) -> Unit
+internal fun CarelevoSetAmountStep(
+    viewModel: CarelevoPatchConnectionFlowViewModel
 ) {
-    var selectedValue by remember(initialValue) { mutableIntStateOf(initialValue) }
+    var selectedValue by remember { mutableIntStateOf(viewModel.inputInsulin) }
     val values = remember { (50..300 step 10).toList() }
-    val sheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = true
-    )
 
-    ModalBottomSheet(
-        onDismissRequest = onDismissRequest,
-        sheetState = sheetState
+    WizardStepLayout(
+        primaryButton = WizardButton(
+            text = stringResource(CoreUiR.string.next),
+            onClick = { viewModel.confirmAmount(selectedValue) }
+        ),
+        secondaryButton = WizardButton(
+            text = stringResource(CoreUiR.string.cancel),
+            onClick = { viewModel.exitWizard() }
+        ),
+        scrollable = false
     ) {
-
-        Column(
+        Text(
+            text = stringResource(R.string.patch_prepare_dialog_msg_insulin_range),
+            style = MaterialTheme.typography.bodyMedium
+        )
+        Box(
             modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .fillMaxWidth()
+                .height(WheelItemHeight * WheelVisibleRows)
         ) {
-            Text(
-                text = stringResource(R.string.patch_prepare_dialog_title_insulin_amount),
-                style = MaterialTheme.typography.titleLarge
+            CarelevoWheelPicker(
+                values = values,
+                selectedValue = selectedValue,
+                onValueSelected = { selectedValue = it }
             )
-            Text(
-                text = stringResource(R.string.patch_prepare_dialog_msg_insulin_range),
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(WheelItemHeight * WheelVisibleRows)
-            ) {
-                CarelevoWheelPicker(
-                    values = values,
-                    selectedValue = selectedValue,
-                    onValueSelected = { selectedValue = it }
-                )
-            }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .padding(top = 12.dp, bottom = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Button(
-                    onClick = onDismissRequest,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(text = stringResource(R.string.carelevo_btn_cancel))
-                }
-                Button(
-                    onClick = { onConfirm(selectedValue) },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(text = stringResource(R.string.common_btn_ok))
-                }
-            }
         }
     }
 }
 
 private val WheelItemHeight = 52.dp
-private val WheelVisibleRows = 5
+private const val WheelVisibleRows = 5
 
 @Composable
 private fun CarelevoWheelPicker(

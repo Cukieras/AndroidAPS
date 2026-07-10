@@ -19,6 +19,11 @@ sealed class CarelevoOverviewEvent : Event {
     data object ClickPumpStopResumeBtn : CarelevoOverviewEvent()
     data object ShowPumpStopDurationSelectDialog : CarelevoOverviewEvent()
     data object ShowPumpResumeDialog : CarelevoOverviewEvent()
+
+    // Action requests emitted from PumpAction.onClick (handled by the screen)
+    data object StartConnectionFlow : CarelevoOverviewEvent()
+    data object StartCommunicationCheck : CarelevoOverviewEvent()
+    data object ShowPumpDiscardDialog : CarelevoOverviewEvent()
 }
 
 sealed class CarelevoConnectEvent : Event {
@@ -26,6 +31,7 @@ sealed class CarelevoConnectEvent : Event {
     data object NoAction : CarelevoConnectEvent()
     data object DiscardComplete : CarelevoConnectEvent()
     data object DiscardFailed : CarelevoConnectEvent()
+    data object ExitFlow : CarelevoConnectEvent()
 
 }
 

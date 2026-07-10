@@ -52,10 +52,7 @@ class CarelevoConnectionCoordinator @Inject constructor(
     }
 
     fun isConnected(): Boolean {
-        val address = carelevoPatch.patchInfo.value?.getOrNull()?.address?.uppercase()
-        if (address == null) {
-            return true // Keep the command loop from spinning when no address is available yet.
-        }
+        val address = carelevoPatch.patchInfo.value?.getOrNull()?.address?.uppercase() ?: return true // Keep the command loop from spinning when no address is available yet.
         return carelevoPatch.isBleConnectedNow(address)
     }
 

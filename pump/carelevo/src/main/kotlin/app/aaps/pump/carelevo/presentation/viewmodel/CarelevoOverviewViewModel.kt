@@ -2,6 +2,7 @@ package app.aaps.pump.carelevo.presentation.viewmodel
 
 import android.content.Context
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.lifecycle.LiveData
@@ -19,6 +20,7 @@ import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.rx.AapsSchedulers
 import app.aaps.core.interfaces.rx.bus.RxBus
 import app.aaps.core.interfaces.utils.DateUtil
+import app.aaps.core.ui.R as CoreUiR
 import app.aaps.core.ui.compose.StatusLevel
 import app.aaps.core.ui.compose.icons.IcLoopPaused
 import app.aaps.core.ui.compose.pump.ActionCategory
@@ -31,6 +33,7 @@ import app.aaps.core.ui.compose.pump.tickerFlow
 import app.aaps.pump.carelevo.R
 import app.aaps.pump.carelevo.ble.core.CarelevoBleController
 import app.aaps.pump.carelevo.ble.data.DeviceModuleState
+import app.aaps.pump.carelevo.command.CmdDiscard
 import app.aaps.pump.carelevo.common.CarelevoPatch
 import app.aaps.pump.carelevo.common.MutableEventFlow
 import app.aaps.pump.carelevo.common.asEventFlow
@@ -46,7 +49,6 @@ import app.aaps.pump.carelevo.domain.usecase.infusion.CarelevoPumpResumeUseCase
 import app.aaps.pump.carelevo.domain.usecase.infusion.CarelevoPumpStopUseCase
 import app.aaps.pump.carelevo.domain.usecase.infusion.model.CarelevoDeleteInfusionRequestModel
 import app.aaps.pump.carelevo.domain.usecase.infusion.model.CarelevoPumpStopRequestModel
-import app.aaps.pump.carelevo.domain.usecase.patch.CarelevoPatchDiscardUseCase
 import app.aaps.pump.carelevo.domain.usecase.patch.CarelevoPatchForceDiscardUseCase
 import app.aaps.pump.carelevo.domain.usecase.patch.CarelevoRequestPatchInfusionInfoUseCase
 import app.aaps.pump.carelevo.presentation.model.CarelevoOverviewEvent
@@ -92,7 +94,6 @@ class CarelevoOverviewViewModel @Inject constructor(
     private val carelevoPatch: CarelevoPatch,
     private val bleController: CarelevoBleController,
     private val aapsSchedulers: AapsSchedulers,
-    private val patchDiscardUseCase: CarelevoPatchDiscardUseCase,
     private val patchForceDiscardUseCase: CarelevoPatchForceDiscardUseCase,
     private val pumpStopUseCase: CarelevoPumpStopUseCase,
     private val pumpResumeUseCase: CarelevoPumpResumeUseCase,
@@ -452,6 +453,9 @@ class CarelevoOverviewViewModel @Inject constructor(
             is CarelevoOverviewEvent.ResumePumpFailed                  -> event
             is CarelevoOverviewEvent.StopPumpComplete                  -> event
             is CarelevoOverviewEvent.StopPumpFailed                    -> event
+            is CarelevoOverviewEvent.StartConnectionFlow               -> event
+            is CarelevoOverviewEvent.StartCommunicationCheck           -> event
+            is CarelevoOverviewEvent.ShowPumpDiscardDialog             -> event
 
             is CarelevoOverviewEvent.ClickPumpStopResumeBtn            -> {
                 resolvePumpStopResumeEvent()
@@ -485,24 +489,30 @@ class CarelevoOverviewViewModel @Inject constructor(
     }
 
     fun startDiscardProcess() {
-        if (!carelevoPatch.isCarelevoConnected()) {
-            startPatchForceDiscard()
-        } else {
-            startPatchDiscard()
-        }
-    }
+        when (carelevoPatch.patchState.value?.getOrNull()) {
+            is PatchState.NotConnectedNotBooting, null -> {
+                triggerEvent(CarelevoOverviewEvent.DiscardComplete)
+            }
 
-    private fun startPatchDiscard() {
-        setUiState(UiState.Loading)
-        compositeDisposable += patchDiscardUseCase.execute()
-            .delaySubscription(2, TimeUnit.SECONDS)
-            .timeout(30000L, TimeUnit.MILLISECONDS)
-            .subscribeOn(aapsSchedulers.io)
-            .observeOn(aapsSchedulers.main)
-            .subscribe(
-                { response -> handlePatchDiscardResponse(response) },
-                { error -> handlePatchDiscardError(error) }
-            )
+            else                                       -> {
+                // Route the BLE stop through the queue (reconnect-before-execute); if the patch can't
+                // be reached at all, fall back to the DB-only force-discard.
+                setUiState(UiState.Loading)
+                viewModelScope.launch {
+                    val result = commandQueue.customCommand(CmdDiscard())
+                    if (result.success) {
+                        aapsLogger.debug(LTag.PUMPCOMM, "[startDiscard] success")
+                        bleController.unBondDevice()
+                        carelevoPatch.releasePatch()
+                        setUiState(UiState.Idle)
+                        triggerEvent(CarelevoOverviewEvent.DiscardComplete)
+                    } else {
+                        aapsLogger.error(LTag.PUMPCOMM, "[startDiscard] failed, falling back to force-discard")
+                        startPatchForceDiscard()
+                    }
+                }
+            }
+        }
     }
 
     private fun handlePatchDiscardResponse(response: ResponseResult<*>) {
@@ -769,11 +779,10 @@ class CarelevoOverviewViewModel @Inject constructor(
         basalRate: Double,
         tempBasalRate: Double?
     ): PumpOverviewUiState {
+        // When connected+idle show no pump banner so the shared communication/queue status
+        // can surface (matches Medtrum/Equil); otherwise show the disconnected warning.
         val banner = when (patchState) {
-            PatchState.ConnectedBooted        -> StatusBanner(
-                text = rh.gs(R.string.carelevo_state_connected_value),
-                level = StatusLevel.NORMAL
-            )
+            PatchState.ConnectedBooted        -> null
 
             PatchState.NotConnectedNotBooting -> StatusBanner(
                 text = rh.gs(R.string.carelevo_state_none_value),
@@ -784,7 +793,7 @@ class CarelevoOverviewViewModel @Inject constructor(
                 text = rh.gs(R.string.carelevo_state_disconnected_value),
                 level = StatusLevel.WARNING
             )
-        }
+        } ?: communicationStatus.statusBanner()
 
         val infoRows = buildList {
             add(
@@ -877,7 +886,7 @@ class CarelevoOverviewViewModel @Inject constructor(
                     label = rh.gs(R.string.carelevo_overview_connect_btn_label),
                     icon = Icons.Filled.SwapHoriz,
                     category = ActionCategory.PRIMARY,
-                    onClick = {}
+                    onClick = { triggerEvent(CarelevoOverviewEvent.StartConnectionFlow) }
                 )
             )
 
@@ -886,7 +895,7 @@ class CarelevoOverviewViewModel @Inject constructor(
                     label = rh.gs(R.string.carelevo_overview_communication_btn_label),
                     icon = Icons.Filled.SwapHoriz,
                     category = ActionCategory.PRIMARY,
-                    onClick = {}
+                    onClick = { triggerEvent(CarelevoOverviewEvent.StartCommunicationCheck) }
                 )
             )
 
@@ -897,19 +906,19 @@ class CarelevoOverviewViewModel @Inject constructor(
             listOf(
                 PumpAction(
                     label = rh.gs(R.string.carelevo_overview_pump_discard_btn_label),
-                    icon = Icons.Filled.SwapHoriz,
+                    icon = Icons.Filled.Delete,
                     category = ActionCategory.MANAGEMENT,
-                    onClick = {}
+                    onClick = { triggerEvent(CarelevoOverviewEvent.ShowPumpDiscardDialog) }
                 ),
                 PumpAction(
                     label = if (overviewData.isPumpStopped) {
-                        rh.gs(R.string.carelevo_overview_pump_resume_btn_label)
+                        rh.gs(CoreUiR.string.pump_resume)
                     } else {
-                        rh.gs(R.string.carelevo_overview_pump_stop_btn_label)
+                        rh.gs(CoreUiR.string.pump_suspend)
                     },
                     icon = if (overviewData.isPumpStopped) Icons.Filled.PlayArrow else IcLoopPaused,
                     category = ActionCategory.MANAGEMENT,
-                    onClick = {}
+                    onClick = { triggerEvent(CarelevoOverviewEvent.ClickPumpStopResumeBtn) }
                 )
             )
         } else {

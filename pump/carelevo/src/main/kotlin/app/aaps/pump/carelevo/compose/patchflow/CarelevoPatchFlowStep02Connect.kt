@@ -1,20 +1,10 @@
 package app.aaps.pump.carelevo.compose.patchflow
 
-import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -22,12 +12,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import app.aaps.core.ui.compose.LocalSnackbarHostState
+import app.aaps.core.ui.compose.AapsSpacing
+import app.aaps.core.ui.compose.banner.ErrorBanner
+import app.aaps.core.ui.compose.pump.WizardButton
+import app.aaps.core.ui.compose.pump.WizardStepLayout
 import app.aaps.pump.carelevo.R
 import app.aaps.pump.carelevo.compose.dialog.CarelevoActionDialog
 import app.aaps.pump.carelevo.presentation.model.CarelevoConnectPrepareEvent
@@ -41,19 +31,9 @@ internal fun CarelevoPatchFlowStep02Connect(
     sharedViewModel: CarelevoPatchConnectionFlowViewModel,
     onExitFlow: () -> Unit
 ) {
-    val context = LocalContext.current
-    val snackbarHostState = LocalSnackbarHostState.current
-    val scanFailedMessage = stringResource(R.string.carelevo_toast_msg_scan_failed)
-    val bluetoothNotEnabledMessage = stringResource(R.string.carelevo_toast_msg_bluetooth_not_enabled)
-    val scanInProgressMessage = stringResource(R.string.carelevo_toast_msg_scan_in_progress)
-    val profileNotSetMessage = stringResource(R.string.carelevo_toast_msg_profile_not_set)
-    val noPatchFoundMessage = stringResource(R.string.carelevo_toast_msg_patch_not_found)
-    val connectFailedMessage = stringResource(R.string.carelevo_toast_msg_connect_failed)
-    val connectCompleteMessage = stringResource(R.string.carelevo_toast_msg_connect_complete)
-    val discardCompleteMessage = stringResource(R.string.carelevo_toast_msg_discard_complete)
-    val discardFailedMessage = stringResource(R.string.carelevo_toast_msg_discard_failed)
     var showDiscardDialog by remember { mutableStateOf(false) }
     var showConnectDialog by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<Int?>(null) }
 
     LaunchedEffect(viewModel, sharedViewModel) {
         viewModel.event.collect { event ->
@@ -63,45 +43,42 @@ internal fun CarelevoPatchFlowStep02Connect(
                 }
 
                 CarelevoConnectPrepareEvent.ShowMessageScanFailed             -> {
-                    snackbarHostState.showSnackbar(scanFailedMessage)
+                    errorMessage = R.string.carelevo_toast_msg_scan_failed
                 }
 
                 CarelevoConnectPrepareEvent.ShowMessageBluetoothNotEnabled    -> {
-                    snackbarHostState.showSnackbar(bluetoothNotEnabledMessage)
+                    errorMessage = R.string.carelevo_toast_msg_bluetooth_not_enabled
                 }
 
-                CarelevoConnectPrepareEvent.ShowMessageScanIsWorking          -> {
-                    snackbarHostState.showSnackbar(scanInProgressMessage)
-                }
+                CarelevoConnectPrepareEvent.ShowMessageScanIsWorking          -> Unit
 
                 CarelevoConnectPrepareEvent.ShowMessageNotSetUserSettingInfo  -> {
-                    snackbarHostState.showSnackbar(profileNotSetMessage)
+                    errorMessage = R.string.carelevo_toast_msg_profile_not_set
                 }
 
                 CarelevoConnectPrepareEvent.ShowMessageSelectedDeviceIseEmpty -> {
-                    snackbarHostState.showSnackbar(noPatchFoundMessage)
+                    errorMessage = R.string.carelevo_toast_msg_patch_not_found
                 }
 
                 CarelevoConnectPrepareEvent.ConnectFailed                     -> {
                     showConnectDialog = false
-                    snackbarHostState.showSnackbar(connectFailedMessage)
+                    errorMessage = R.string.carelevo_toast_msg_connect_failed
                 }
 
                 CarelevoConnectPrepareEvent.ConnectComplete                   -> {
                     showConnectDialog = false
-                    Toast.makeText(context, connectCompleteMessage, Toast.LENGTH_SHORT).show()
+                    errorMessage = null
                     sharedViewModel.setPage(CarelevoPatchStep.SAFETY_CHECK)
                 }
 
                 CarelevoConnectPrepareEvent.DiscardComplete                   -> {
                     showDiscardDialog = false
-                    Toast.makeText(context, discardCompleteMessage, Toast.LENGTH_SHORT).show()
                     onExitFlow()
                 }
 
                 CarelevoConnectPrepareEvent.DiscardFailed                     -> {
                     showDiscardDialog = false
-                    snackbarHostState.showSnackbar(discardFailedMessage)
+                    errorMessage = R.string.carelevo_toast_msg_discard_failed
                 }
 
                 CarelevoConnectPrepareEvent.NoAction                          -> Unit
@@ -125,13 +102,17 @@ internal fun CarelevoPatchFlowStep02Connect(
     }
 
     if (showConnectDialog) {
-        CarelevoPatchConnectSheet(
+        CarelevoActionDialog(
             onDismissRequest = { showConnectDialog = false },
-            onConfirmClick = {
+            title = stringResource(R.string.carelevo_dialog_patch_connect_message_title),
+            content = "CareLevo",
+            primaryText = stringResource(R.string.carelevo_btn_confirm),
+            onPrimaryClick = {
                 showConnectDialog = false
                 viewModel.startConnect(sharedViewModel.inputInsulin)
             },
-            onResearchClick = {
+            secondaryText = stringResource(R.string.carelevo_btn_research),
+            onSecondaryClick = {
                 showConnectDialog = false
                 viewModel.startScan()
             }
@@ -139,112 +120,42 @@ internal fun CarelevoPatchFlowStep02Connect(
     }
 
     CarelevoPatchConnectContent(
+        errorMessage = errorMessage,
         onDiscardClick = { showDiscardDialog = true },
-        onSearchClick = { viewModel.startScan() }
-    )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun CarelevoPatchConnectSheet(
-    onDismissRequest: () -> Unit,
-    onConfirmClick: () -> Unit,
-    onResearchClick: () -> Unit
-) {
-    val sheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = true
-    )
-
-    ModalBottomSheet(
-        onDismissRequest = onDismissRequest,
-        sheetState = sheetState
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.carelevo_dialog_patch_connect_message_title),
-                style = MaterialTheme.typography.titleLarge
-            )
-            Text(
-                text = "CareLevo",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .padding(top = 12.dp, bottom = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Button(
-                    onClick = onResearchClick,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(text = stringResource(R.string.carelevo_btn_research))
-                }
-                Button(
-                    onClick = onConfirmClick,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(text = stringResource(R.string.carelevo_btn_confirm))
-                }
-            }
+        onSearchClick = {
+            errorMessage = null
+            viewModel.startScan()
         }
-    }
+    )
 }
 
 @Composable
 private fun CarelevoPatchConnectContent(
+    errorMessage: Int?,
     onDiscardClick: () -> Unit,
     onSearchClick: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.SpaceBetween
+    WizardStepLayout(
+        primaryButton = WizardButton(
+            text = stringResource(R.string.carelevo_btn_input_search_patch),
+            onClick = onSearchClick
+        ),
+        secondaryButton = WizardButton(
+            text = stringResource(R.string.carelevo_btn_patch_expiration),
+            onClick = onDiscardClick
+        )
     ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(32.dp)
-        ) {
-            CarelevoPatchConnectStepSection(
-                stepLabel = stringResource(R.string.carelevo_patch_step_1),
-                title = stringResource(R.string.carelevo_patch_connect_step_1_title),
-                description = stringResource(R.string.carelevo_patch_connect_step_1_desc)
-            )
-            CarelevoPatchConnectStepSection(
-                stepLabel = stringResource(R.string.carelevo_patch_step_2),
-                title = stringResource(R.string.carelevo_patch_connect_step_2_title),
-                description = stringResource(R.string.carelevo_patch_connect_step_2_desc)
-            )
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Button(
-                onClick = onDiscardClick,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(60.dp)
-            ) {
-                PatchFlowButtonText(text = stringResource(R.string.carelevo_btn_patch_expiration))
-            }
-            Button(
-                onClick = onSearchClick,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(60.dp)
-            ) {
-                PatchFlowButtonText(text = stringResource(R.string.carelevo_btn_input_search_patch))
-            }
-        }
+        errorMessage?.let { ErrorBanner(message = stringResource(it)) }
+        CarelevoPatchConnectStepSection(
+            stepLabel = stringResource(R.string.carelevo_patch_step_1),
+            title = stringResource(R.string.carelevo_patch_connect_step_1_title),
+            description = stringResource(R.string.carelevo_patch_connect_step_1_desc)
+        )
+        CarelevoPatchConnectStepSection(
+            stepLabel = stringResource(R.string.carelevo_patch_step_2),
+            title = stringResource(R.string.carelevo_patch_connect_step_2_title),
+            description = stringResource(R.string.carelevo_patch_connect_step_2_desc)
+        )
     }
 }
 
@@ -254,8 +165,8 @@ private fun CarelevoPatchConnectStepSection(
     title: String,
     description: String
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.Bottom) {
+    Column(verticalArrangement = Arrangement.spacedBy(AapsSpacing.medium)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(AapsSpacing.small), verticalAlignment = Alignment.Bottom) {
             Text(
                 text = stepLabel,
                 style = MaterialTheme.typography.titleMedium
@@ -278,6 +189,7 @@ private fun CarelevoPatchConnectStepSection(
 private fun CarelevoPatchFlowStep02ConnectPreview() {
     MaterialTheme {
         CarelevoPatchConnectContent(
+            errorMessage = null,
             onDiscardClick = {},
             onSearchClick = {}
         )

@@ -2,166 +2,102 @@ package app.aaps.pump.carelevo.compose.patchflow
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.fragment.app.FragmentActivity
+import app.aaps.core.ui.R as CoreUiR
+import app.aaps.core.ui.compose.AapsSpacing
+import app.aaps.core.ui.compose.pump.WizardButton
+import app.aaps.core.ui.compose.pump.WizardStepLayout
 import app.aaps.pump.carelevo.R
-import app.aaps.pump.carelevo.compose.dialog.CarelevoActionDialog
-import app.aaps.pump.carelevo.compose.dialog.CarelevoInsulinAmountPickerSheet
-import app.aaps.pump.carelevo.compose.dialog.CarelevoInsulinRefillGuideDialog
-import app.aaps.pump.carelevo.compose.smoketest.CarelevoBleSmokeTestDialog
-import app.aaps.pump.carelevo.config.BleEnvConfig
 import app.aaps.pump.carelevo.presentation.type.CarelevoPatchStep
 import app.aaps.pump.carelevo.presentation.viewmodel.CarelevoPatchConnectionFlowViewModel
-import java.util.UUID
 
 @Composable
 internal fun CarelevoPatchFlowStep01Start(
     viewModel: CarelevoPatchConnectionFlowViewModel,
     onExitFlow: () -> Unit
 ) {
-    val context = LocalContext.current
-    var showDiscardDialog by remember { mutableStateOf(false) }
-    var showGuideDialog by remember { mutableStateOf(false) }
-    var showInsulinAmountPicker by remember { mutableStateOf(false) }
-    var showSmokeTestDialog by remember { mutableStateOf(false) }
-
-    if (showSmokeTestDialog) {
-        CarelevoBleSmokeTestDialog(
-            transport = viewModel.bleTransport,
-            rxUuid = UUID.fromString(BleEnvConfig.BLE_RX_CHAR_UUID),
-            txUuid = UUID.fromString(BleEnvConfig.BLE_TX_CHAR_UUID),
-            onDismiss = { showSmokeTestDialog = false }
-        )
-    }
-
-    if (showDiscardDialog) {
-        CarelevoActionDialog(
-            onDismissRequest = { showDiscardDialog = false },
-            title = stringResource(R.string.carelevo_dialog_patch_discard_message_title),
-            content = stringResource(R.string.carelevo_dialog_patch_discard_message_desc),
-            primaryText = stringResource(R.string.carelevo_btn_confirm),
-            onPrimaryClick = {
-                showDiscardDialog = false
-                onExitFlow()
-            },
-            secondaryText = stringResource(R.string.carelevo_btn_cancel),
-            onSecondaryClick = { showDiscardDialog = false }
-        )
-    }
-
-    if (showGuideDialog) {
-        CarelevoInsulinRefillGuideDialog(
-            onDismissRequest = { showGuideDialog = false }
-        )
-    }
-
-    if (showInsulinAmountPicker) {
-        CarelevoInsulinAmountPickerSheet(
-            initialValue = viewModel.inputInsulin,
-            onDismissRequest = { showInsulinAmountPicker = false },
-            onConfirm = { selected ->
-                showInsulinAmountPicker = false
-                if (hasPatchStartPermissions(context)) {
-                    viewModel.setInputInsulin(selected)
-                    viewModel.setPage(CarelevoPatchStep.PATCH_CONNECT)
-                } else {
-                    requestPatchStartPermissions(context as FragmentActivity)
-                }
-            }
-        )
-    }
-
     CarelevoPatchStartContent(
-        onGuideClick = { showGuideDialog = true },
-        onDiscardClick = { showDiscardDialog = true },
-        onFillAmountClick = { showInsulinAmountPicker = true },
-        onSmokeTestClick = { showSmokeTestDialog = true }
+        onNextClick = { viewModel.setPage(CarelevoPatchStep.SET_AMOUNT) },
+        onCancelClick = onExitFlow
     )
 }
 
 @Composable
 private fun CarelevoPatchStartContent(
-    onGuideClick: () -> Unit,
-    onDiscardClick: () -> Unit,
-    onFillAmountClick: () -> Unit,
-    onSmokeTestClick: () -> Unit = {}
+    onNextClick: () -> Unit,
+    onCancelClick: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.SpaceBetween
+    var guideExpanded by remember { mutableStateOf(false) }
+    WizardStepLayout(
+        primaryButton = WizardButton(
+            text = stringResource(CoreUiR.string.next),
+            onClick = onNextClick
+        ),
+        secondaryButton = WizardButton(
+            text = stringResource(CoreUiR.string.cancel),
+            onClick = onCancelClick
+        )
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Text(
+            text = stringResource(R.string.carelevo_title_fill_insulin),
+            style = MaterialTheme.typography.titleMedium
+        )
+        Text(
+            text = stringResource(R.string.carelevo_notice_fill_insulin_amount),
+            style = MaterialTheme.typography.bodyMedium
+        )
+        CarelevoInsulinRefillGuideSection(
+            expanded = guideExpanded,
+            onExpand = { guideExpanded = true }
+        )
+    }
+}
+
+@Composable
+private fun CarelevoInsulinRefillGuideSection(
+    expanded: Boolean,
+    onExpand: () -> Unit
+) {
+    if (!expanded) {
+        Button(onClick = onExpand) {
+            Text(text = stringResource(R.string.carelevo_btn_insulin_guide))
+        }
+        return
+    }
+
+    val steps = listOf(
+        stringResource(R.string.carelevo_insulin_refill_step1),
+        stringResource(R.string.carelevo_insulin_refill_step2),
+        stringResource(R.string.carelevo_insulin_refill_step3),
+        stringResource(R.string.carelevo_insulin_refill_step4),
+        stringResource(R.string.carelevo_insulin_refill_step5),
+        stringResource(R.string.carelevo_insulin_refill_step6),
+        stringResource(R.string.carelevo_insulin_refill_step7),
+        stringResource(R.string.carelevo_insulin_refill_step8),
+        stringResource(R.string.carelevo_insulin_refill_step9),
+        stringResource(R.string.carelevo_insulin_refill_step10),
+        stringResource(R.string.carelevo_insulin_refill_step11),
+        stringResource(R.string.carelevo_insulin_refill_step12)
+    )
+    Column(verticalArrangement = Arrangement.spacedBy(AapsSpacing.large)) {
+        Text(
+            text = stringResource(R.string.carelevo_btn_insulin_guide),
+            style = MaterialTheme.typography.titleSmall
+        )
+        steps.forEach { step ->
             Text(
-                text = stringResource(R.string.carelevo_title_fill_insulin),
-                style = MaterialTheme.typography.titleMedium
-            )
-            Text(
-                text = stringResource(R.string.carelevo_notice_fill_insulin_amount),
+                text = step,
                 style = MaterialTheme.typography.bodyMedium
             )
-            Button(
-                onClick = onGuideClick,
-                modifier = Modifier
-            ) {
-                Text(text = stringResource(R.string.carelevo_btn_insulin_guide))
-            }
-        }
-
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Dev-only: smoke test the new BLE stack against a fresh (unpaired) pump.
-            // Safe here because the Start screen runs before any connection is attempted.
-            TextButton(onClick = onSmokeTestClick) {
-                Text(
-                    text = "[Dev] BLE smoke test",
-                    style = MaterialTheme.typography.labelSmall
-                )
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Button(
-                    onClick = onDiscardClick,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(60.dp)
-                ) {
-                    PatchFlowButtonText(text = stringResource(R.string.carelevo_btn_patch_expiration))
-                }
-                Button(
-                    onClick = onFillAmountClick,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(60.dp)
-                ) {
-                    PatchFlowButtonText(text = stringResource(R.string.carelevo_btn_input_insulin_amount))
-                }
-            }
         }
     }
 }
@@ -171,9 +107,8 @@ private fun CarelevoPatchStartContent(
 private fun CarelevoPatchFlowStep01StartPreview() {
     MaterialTheme {
         CarelevoPatchStartContent(
-            onGuideClick = {},
-            onDiscardClick = {},
-            onFillAmountClick = {}
+            onNextClick = {},
+            onCancelClick = {}
         )
     }
 }

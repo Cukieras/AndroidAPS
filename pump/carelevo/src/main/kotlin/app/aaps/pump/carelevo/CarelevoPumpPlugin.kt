@@ -31,6 +31,7 @@ import app.aaps.core.interfaces.pump.PumpRate
 import app.aaps.core.interfaces.pump.PumpSync
 import app.aaps.core.interfaces.pump.defs.fillFor
 import app.aaps.core.interfaces.queue.CommandQueue
+import app.aaps.core.interfaces.queue.CustomCommand
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.rx.AapsSchedulers
 import app.aaps.core.interfaces.rx.bus.RxBus
@@ -49,6 +50,7 @@ import app.aaps.pump.carelevo.ble.data.DeviceModuleState.Companion.codeToDeviceR
 import app.aaps.pump.carelevo.ble.data.PeripheralConnectionState
 import app.aaps.pump.carelevo.common.CarelevoAlarmNotifier
 import app.aaps.pump.carelevo.common.CarelevoObserveReceiver
+import app.aaps.pump.carelevo.command.CarelevoActivationExecutor
 import app.aaps.pump.carelevo.common.CarelevoPatch
 import app.aaps.pump.carelevo.common.keys.CarelevoBooleanPreferenceKey
 import app.aaps.pump.carelevo.common.keys.CarelevoIntPreferenceKey
@@ -113,7 +115,8 @@ class CarelevoPumpPlugin @Inject constructor(
     private val bolusCoordinator: CarelevoBolusCoordinator,
     private val tempBasalCoordinator: CarelevoTempBasalCoordinator,
     private val connectionCoordinator: CarelevoConnectionCoordinator,
-    private val settingsCoordinator: CarelevoSettingsCoordinator
+    private val settingsCoordinator: CarelevoSettingsCoordinator,
+    private val activationExecutor: CarelevoActivationExecutor
 ) : PumpPluginBase(
     pluginDescription = PluginDescription()
         .mainType(PluginType.PUMP)
@@ -492,6 +495,11 @@ class CarelevoPumpPlugin @Inject constructor(
     override fun isThisProfileSet(profile: PumpProfile): Boolean {
         return carelevoPatch.checkIsSameProfile(profile)
     }
+
+    // Activation ops (safety check, …) are queued so they get the CommandQueue's managed
+    // connect-before-execute / reconnect lifecycle instead of a direct BLE call.
+    override fun executeCustomCommand(customCommand: CustomCommand): PumpEnactResult? =
+        activationExecutor.execute(customCommand)
 
     private val _lastDataTime = MutableStateFlow(0L)
     override val lastDataTime: StateFlow<Long> = _lastDataTime.asStateFlow()

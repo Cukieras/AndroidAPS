@@ -1,5 +1,6 @@
 package app.aaps.pump.carelevo.common
 
+import app.aaps.core.data.model.TE
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.profile.Profile
@@ -116,6 +117,21 @@ class CarelevoPatch @Inject constructor(
 
     private val _profile: BehaviorSubject<Optional<Profile>> = BehaviorSubject.create()
     val profile get() = _profile
+
+    /**
+     * Site placement chosen during the activation wizard's site-location step. Read by the needle
+     * insertion step when it records the CANNULA_CHANGE therapy event. Defaults to NONE (site
+     * rotation disabled or step skipped).
+     */
+    @Volatile var sitePlacementLocation: TE.Location = TE.Location.NONE
+        private set
+    @Volatile var sitePlacementArrow: TE.Arrow = TE.Arrow.NONE
+        private set
+
+    fun setSitePlacement(location: TE.Location, arrow: TE.Arrow) {
+        sitePlacementLocation = location
+        sitePlacementArrow = arrow
+    }
 
     private var lastBtState: BleState? = null
 
@@ -345,8 +361,11 @@ class CarelevoPatch @Inject constructor(
         //unBondDevice()
         bleController.clearGatt()
         bleController.unRegisterPeripheralInfo()
-        //_patchInfo.onNext(Optional.ofNullable(null))
-        //_infusionInfo.onNext(Optional.ofNullable(null))
+        // Clear cached patch/infusion info so a deactivated patch is no longer "known": this resets
+        // isCheckScreen (was keeping the wizard latched to SAFETY_CHECK after a mid-activation discard)
+        // and lets patchState fall back to NotConnectedNotBooting.
+        _patchInfo.onNext(Optional.empty())
+        _infusionInfo.onNext(Optional.empty())
     }
 
     private fun observePatch() {

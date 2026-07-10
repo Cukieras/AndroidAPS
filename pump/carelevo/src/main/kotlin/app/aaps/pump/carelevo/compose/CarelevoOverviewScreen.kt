@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -77,11 +78,6 @@ fun CarelevoOverviewScreen(
     val resumeFailedMessage = stringResource(R.string.carelevo_toast_mag_set_basal_resume_fail)
     val suspendSuccessMessage = stringResource(R.string.carelevo_toast_mag_set_basal_suspend_success)
     val suspendFailedMessage = stringResource(R.string.carelevo_toast_mag_set_basal_suspend_fail)
-    val connectLabel = stringResource(R.string.carelevo_overview_connect_btn_label)
-    val communicationLabel = stringResource(R.string.carelevo_overview_communication_btn_label)
-    val discardLabel = stringResource(R.string.carelevo_overview_pump_discard_btn_label)
-    val stopLabel = stringResource(R.string.carelevo_overview_pump_stop_btn_label)
-    val resumeLabel = stringResource(R.string.carelevo_overview_pump_resume_btn_label)
     val isActionLoading = actionState is UiState.Loading
 
     LaunchedEffect(viewModel) {
@@ -109,6 +105,9 @@ fun CarelevoOverviewScreen(
                 CarelevoOverviewEvent.StopPumpFailed                    -> snackbarHostState.showSnackbar(suspendFailedMessage)
                 CarelevoOverviewEvent.ShowPumpResumeDialog              -> showResumeDialog = true
                 CarelevoOverviewEvent.ShowPumpStopDurationSelectDialog  -> showSuspendTimePicker = true
+                CarelevoOverviewEvent.StartConnectionFlow               -> onStartWorkflow(CarelevoScreenType.CONNECTION_FLOW_START)
+                CarelevoOverviewEvent.StartCommunicationCheck           -> onStartWorkflow(CarelevoScreenType.COMMUNICATION_CHECK)
+                CarelevoOverviewEvent.ShowPumpDiscardDialog             -> showDiscardDialog = true
                 CarelevoOverviewEvent.ClickPumpStopResumeBtn,
                 CarelevoOverviewEvent.NoAction                          -> Unit
             }
@@ -162,26 +161,9 @@ fun CarelevoOverviewScreen(
         )
     }
 
-    val patchedState = baseState.copy(
-        primaryActions = baseState.primaryActions.map { action ->
-            when (action.label) {
-                connectLabel       -> action.copy(onClick = { onStartWorkflow(CarelevoScreenType.CONNECTION_FLOW_START) })
-                communicationLabel -> action.copy(onClick = { onStartWorkflow(CarelevoScreenType.COMMUNICATION_CHECK) })
-                else               -> action
-            }
-        },
-        managementActions = baseState.managementActions.map { action ->
-            when (action.label) {
-                discardLabel           -> action.copy(onClick = { showDiscardDialog = true })
-                stopLabel, resumeLabel -> action.copy(onClick = { viewModel.triggerEvent(CarelevoOverviewEvent.ClickPumpStopResumeBtn) })
-                else                   -> action
-            }
-        }
-    )
-
     Box {
         PumpOverviewScreen(
-            state = patchedState,
+            state = baseState,
             customContent = {
                 Image(
                     painter = painterResource(id = R.drawable.ic_carelevo_128),
@@ -270,14 +252,14 @@ private fun CarelevoOverviewScreenConnectedPreview() {
                 managementActions = listOf(
                     PumpAction(
                         label = stringResource(R.string.carelevo_overview_pump_discard_btn_label),
-                        icon = Icons.Filled.SwapHoriz,
+                        icon = Icons.Filled.Delete,
                         category = ActionCategory.MANAGEMENT,
                         enabled = true,
                         visible = true,
                         onClick = {}
                     ),
                     PumpAction(
-                        label = stringResource(R.string.carelevo_overview_pump_stop_btn_label),
+                        label = stringResource(app.aaps.core.ui.R.string.pump_suspend),
                         icon = IcLoopPaused,
                         category = ActionCategory.MANAGEMENT,
                         enabled = true,

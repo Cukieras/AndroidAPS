@@ -3,19 +3,16 @@ package app.aaps.pump.carelevo.compose.patchflow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
+import app.aaps.core.ui.R as CoreUiR
+import app.aaps.core.ui.compose.AapsSpacing
+import app.aaps.core.ui.compose.pump.WizardButton
+import app.aaps.core.ui.compose.pump.WizardStepLayout
 import app.aaps.pump.carelevo.R
 import app.aaps.pump.carelevo.presentation.type.CarelevoPatchStep
 import app.aaps.pump.carelevo.presentation.viewmodel.CarelevoPatchConnectionFlowViewModel
@@ -33,42 +30,31 @@ internal fun CarelevoPatchFlowStep04Attach(
 private fun CarelevoPatchFlowStep04AttachContent(
     onReadyClick: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.SpaceBetween
+    WizardStepLayout(
+        primaryButton = WizardButton(
+            text = stringResource(CoreUiR.string.next),
+            onClick = onReadyClick
+        )
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(32.dp)) {
-            CarelevoPatchAttachSection(
-                stepLabel = stringResource(R.string.carelevo_patch_step_1),
-                title = stringResource(R.string.carelevo_patch_attach_step1_title),
-                description = stringResource(R.string.carelevo_patch_attach_step1_desc)
-            )
-            CarelevoPatchAttachSection(
-                stepLabel = stringResource(R.string.carelevo_patch_step_2),
-                title = stringResource(R.string.carelevo_patch_attach_step2_title),
-                description = stringResource(R.string.carelevo_patch_attach_step2_desc)
-            )
-            CarelevoPatchAttachSection(
-                stepLabel = stringResource(R.string.carelevo_patch_step_3),
-                title = stringResource(R.string.carelevo_patch_attach_step3_title),
-                description = stringResource(R.string.carelevo_patch_attach_step3_desc)
-            )
-            Text(
-                text = stringResource(R.string.carelevo_patch_attach_step4_desc),
-                style = MaterialTheme.typography.bodyLarge
-            )
-        }
-
-        Button(
-            onClick = onReadyClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp)
-        ) {
-            PatchFlowButtonText(text = stringResource(R.string.carelevo_btn_ready_complete))
-        }
+        CarelevoPatchAttachSection(
+            stepLabel = stringResource(R.string.carelevo_patch_step_1),
+            title = stringResource(R.string.carelevo_patch_attach_step1_title),
+            description = stringResource(R.string.carelevo_patch_attach_step1_desc)
+        )
+        CarelevoPatchAttachSection(
+            stepLabel = stringResource(R.string.carelevo_patch_step_2),
+            title = stringResource(R.string.carelevo_patch_attach_step2_title),
+            description = stringResource(R.string.carelevo_patch_attach_step2_desc)
+        )
+        CarelevoPatchAttachSection(
+            stepLabel = stringResource(R.string.carelevo_patch_step_3),
+            title = stringResource(R.string.carelevo_patch_attach_step3_title),
+            description = stringResource(R.string.carelevo_patch_attach_step3_desc)
+        )
+        Text(
+            text = stringResource(R.string.carelevo_patch_attach_step4_desc),
+            style = MaterialTheme.typography.bodyLarge
+        )
     }
 }
 
@@ -78,8 +64,8 @@ private fun CarelevoPatchAttachSection(
     title: String,
     description: String
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.Bottom) {
+    Column(verticalArrangement = Arrangement.spacedBy(AapsSpacing.medium)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(AapsSpacing.small), verticalAlignment = Alignment.Bottom) {
             Text(
                 text = stepLabel,
                 style = MaterialTheme.typography.titleMedium
