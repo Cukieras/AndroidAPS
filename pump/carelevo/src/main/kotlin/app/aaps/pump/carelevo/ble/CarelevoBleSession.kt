@@ -2,6 +2,8 @@ package app.aaps.pump.carelevo.ble
 
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
+import app.aaps.pump.carelevo.ble.commands.InfusionInfoCommand
+import app.aaps.pump.carelevo.ble.commands.InfusionInfoResponse
 import app.aaps.pump.carelevo.ble.commands.PatchInfoCommand
 import app.aaps.pump.carelevo.ble.commands.PatchInfoResponse
 import app.aaps.pump.carelevo.ble.gatt.BleTransportGattConnection
@@ -52,7 +54,23 @@ class CarelevoBleSession @Inject constructor(
      * @throws kotlinx.coroutines.TimeoutCancellationException on connect-handshake or read timeout.
      * Always closes the connection and cancels the session scope, even on failure.
      */
-    suspend fun readPatchInfo(address: String): PatchInfoResponse {
+    /** Read Patch Info (0x33 → 0x93 RPT1 + 0x94 RPT2). */
+    suspend fun readPatchInfo(address: String): PatchInfoResponse =
+        withSession(address, "patch info") { it.requestMultiple(PatchInfoCommand()) }
+
+    /** Read Infusion Info (0x31 → 0x91) — the periodic status read (reservoir, totals, pump state). */
+    suspend fun readInfusionInfo(address: String): InfusionInfoResponse =
+        withSession(address, "infusion info") { it.request(InfusionInfoCommand()) }
+
+    /** Run any single-response [command] (write or read) on a fresh new-transport session. */
+    suspend fun <R : BleResponse> runSingle(address: String, command: BleCommand<R>): R =
+        withSession(address, command::class.simpleName ?: "command") { it.request(command) }
+
+    /**
+     * Open a fresh connection, run [block] against the [BleClient], and close. Each call gets its own
+     * adapter+client+scope — see the class KDoc for why (one-shot [BleTransportGattConnection.close]).
+     */
+    private suspend fun <R> withSession(address: String, label: String, block: suspend (BleClient) -> R): R {
         // BluetoothAdapter.getRemoteDevice requires an UPPERCASE MAC (lowercase throws
         // IllegalArgumentException); the stored address is lowercase, so normalize here.
         val mac = address.uppercase()
@@ -61,8 +79,8 @@ class CarelevoBleSession @Inject constructor(
         val client: BleClient = BleClientImpl(gatt, writeUuid, notifyUuid, scope)
         try {
             open(gatt, mac)
-            aapsLogger.debug(LTag.PUMPCOMM, "bleSession: reading patch info")
-            return withTimeout(READ_TIMEOUT_MS) { client.requestMultiple(PatchInfoCommand()) }
+            aapsLogger.debug(LTag.PUMPCOMM, "bleSession: reading $label")
+            return withTimeout(READ_TIMEOUT_MS) { block(client) }
         } finally {
             gatt.close()
             scope.cancel()

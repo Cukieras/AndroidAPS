@@ -5,7 +5,12 @@ import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.pump.PumpEnactResult
 import app.aaps.core.interfaces.queue.CustomCommand
 import app.aaps.core.interfaces.rx.AapsSchedulers
+import app.aaps.core.keys.interfaces.Preferences
+import app.aaps.pump.carelevo.ble.CarelevoBleSession
+import app.aaps.pump.carelevo.ble.commands.BuzzModeCommand
 import app.aaps.pump.carelevo.common.CarelevoPatch
+import app.aaps.pump.carelevo.common.keys.CarelevoBooleanPreferenceKey
+import app.aaps.pump.carelevo.coordinator.CarelevoConnectionCoordinator
 import app.aaps.pump.carelevo.domain.model.ResponseResult
 import app.aaps.pump.carelevo.domain.model.patch.NeedleCheckSuccess
 import app.aaps.pump.carelevo.domain.type.SafetyProgress
@@ -31,9 +36,11 @@ import app.aaps.pump.carelevo.domain.usecase.userSetting.model.CarelevoPatchBuzz
 import app.aaps.pump.carelevo.domain.usecase.userSetting.model.CarelevoPatchExpiredThresholdModifyRequestModel
 import app.aaps.pump.carelevo.domain.usecase.userSetting.model.CarelevoUserSettingInfoRequestModel
 import io.reactivex.rxjava3.core.Single
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.runBlocking
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Provider
@@ -68,7 +75,11 @@ class CarelevoActivationExecutor @Inject constructor(
     private val expiredThresholdModifyUseCase: CarelevoPatchExpiredThresholdModifyUseCase,
     private val buzzModifyUseCase: CarelevoPatchBuzzModifyUseCase,
     private val alarmClearRequestUseCase: AlarmClearRequestUseCase,
-    private val alarmClearPatchDiscardUseCase: AlarmClearPatchDiscardUseCase
+    private val alarmClearPatchDiscardUseCase: AlarmClearPatchDiscardUseCase,
+    // Phase-2 new BLE stack (flag-gated). See `_docs/carelevo-new-ble-stack.md`.
+    private val preferences: Preferences,
+    private val bleSession: CarelevoBleSession,
+    private val connectionCoordinator: CarelevoConnectionCoordinator
 ) {
 
     private companion object {
@@ -86,6 +97,11 @@ class CarelevoActivationExecutor @Inject constructor(
 
         // The alarm use cases already wait up to 10s internally for the patch's clear/discard event.
         private const val ALARM_TIMEOUT_SEC = 20L
+
+        // Settle window after dropping the legacy GATT before the new transport re-dials the same
+        // device (mirrors CarelevoPumpPlugin). Phase-2 new-stack path only.
+        private const val NEW_BLE_SETTLE_MS = 1000L
+        private const val RESULT_SUCCESS = 0 // pump result byte 0 = SUCCESS (legacy Result taxonomy)
     }
 
     private val _safetyProgress = MutableSharedFlow<SafetyProgress>(extraBufferCapacity = 16)
@@ -297,6 +313,9 @@ class CarelevoActivationExecutor @Inject constructor(
     }
 
     private fun runUpdateBuzzer(command: CmdUpdateBuzzer): PumpEnactResult {
+        if (preferences.get(CarelevoBooleanPreferenceKey.CARELEVO_USE_NEW_BLE_STACK)) {
+            return runBuzzerViaNewStack(command.on)
+        }
         val result = pumpEnactResultProvider.get()
         val patchState = carelevoPatch.patchState.value?.getOrNull()
         return try {
@@ -310,6 +329,33 @@ class CarelevoActivationExecutor @Inject constructor(
             result.success(success).enacted(success)
         } catch (e: Exception) {
             aapsLogger.error(LTag.PUMPCOMM, "CmdUpdateBuzzer exception", e)
+            result.success(false).enacted(false).comment(e.message ?: "error")
+        }
+    }
+
+    /**
+     * Phase-2 first WRITE over the new [app.aaps.pump.carelevo.ble.BleClient] stack (flag-gated,
+     * engineering-only): set the patch buzzer via [BuzzModeCommand] (0x18 → 0x78). Chosen as the first
+     * write to device-validate because it is non-therapy and audibly verifiable (the patch buzzes). Same
+     * connection-ownership handling as the plugin's status read: drop the legacy link + settle, then run
+     * the command on the new transport's own session (this runs on the queue worker thread, blocked
+     * inside the command, so the worker cannot concurrently re-dial legacy). See `_docs/carelevo-new-ble-stack.md`.
+     */
+    private fun runBuzzerViaNewStack(on: Boolean): PumpEnactResult {
+        val result = pumpEnactResultProvider.get()
+        val address = carelevoPatch.getPatchInfoAddress()
+            ?: return result.success(false).enacted(false).comment("no patch address")
+        return try {
+            connectionCoordinator.disconnect("new-ble-session")
+            val response = runBlocking {
+                delay(NEW_BLE_SETTLE_MS)
+                bleSession.runSingle(address, BuzzModeCommand(use = on))
+            }
+            val success = response.resultCode == RESULT_SUCCESS
+            aapsLogger.info(LTag.PUMPCOMM, "newBle.buzzer OK on=$on result=${response.resultCode}")
+            result.success(success).enacted(success)
+        } catch (e: Exception) {
+            aapsLogger.error(LTag.PUMPCOMM, "newBle.buzzer FAILED", e)
             result.success(false).enacted(false).comment(e.message ?: "error")
         }
     }

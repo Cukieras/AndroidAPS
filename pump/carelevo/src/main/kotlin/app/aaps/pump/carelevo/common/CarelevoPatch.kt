@@ -28,9 +28,11 @@ import app.aaps.pump.carelevo.domain.model.bt.AlertReportResultModel
 import app.aaps.pump.carelevo.domain.model.bt.BasalInfusionResumeResultModel
 import app.aaps.pump.carelevo.domain.model.bt.FinishPulseReportResultModel
 import app.aaps.pump.carelevo.domain.model.bt.InfusionInfoReportResultModel
+import app.aaps.pump.carelevo.domain.model.bt.InfusionModeResult.Companion.codeToInfusionModeCommand
 import app.aaps.pump.carelevo.domain.model.bt.InfusionModeResult.Companion.commandToCode
 import app.aaps.pump.carelevo.domain.model.bt.NoticeReportResultModel
 import app.aaps.pump.carelevo.domain.model.bt.PatchResultModel
+import app.aaps.pump.carelevo.domain.model.bt.PumpStateResult.Companion.codeToPumpStateCommand
 import app.aaps.pump.carelevo.domain.model.bt.PumpStateResult.Companion.commandToCode
 import app.aaps.pump.carelevo.domain.model.bt.RetrieveOperationInfoResultModel
 import app.aaps.pump.carelevo.domain.model.bt.WarningReportResultModel
@@ -418,17 +420,50 @@ class CarelevoPatch @Inject constructor(
     }
 
     private fun updateInfusionInfo(model: InfusionInfoReportResultModel) {
-        val requestModel = CarelevoPatchRptInfusionInfoRequestModel(
-            runningMinute = model.runningMinutes,
-            remains = model.remains,
-            infusedTotalBasalAmount = model.infusedTotalBasalAmount,
-            infusedTotalBolusAmount = model.infusedTotalBolusAmount,
-            pumpState = model.pumpState.commandToCode(),
-            mode = model.mode.commandToCode(),
-            currentInfusedProgramVolume = model.currentInfusedProgramVolume,
-            realInfusedTime = model.realInfusedTime
+        dispatchInfusionInfo(
+            CarelevoPatchRptInfusionInfoRequestModel(
+                runningMinute = model.runningMinutes,
+                remains = model.remains,
+                infusedTotalBasalAmount = model.infusedTotalBasalAmount,
+                infusedTotalBolusAmount = model.infusedTotalBolusAmount,
+                pumpState = model.pumpState.commandToCode(),
+                mode = model.mode.commandToCode(),
+                currentInfusedProgramVolume = model.currentInfusedProgramVolume,
+                realInfusedTime = model.realInfusedTime
+            )
         )
+    }
 
+    /**
+     * Persist an infusion-info report decoded by the new [app.aaps.pump.carelevo.ble.BleClient] stack
+     * (Phase 2). [pumpStateRaw]/[modeRaw] are the raw 0x91 bytes; they are normalized through the same
+     * int→enum→int roundtrip the legacy `_patchEvent` path uses (`codeTo…().commandToCode()`) so the
+     * persisted values are byte-for-byte identical. Mirrors [updateInfusionInfo] but sourced from the
+     * new command instead of the Rx `_patchEvent` subject.
+     */
+    fun applyInfusionInfoReport(
+        runningMinutes: Int,
+        remains: Double,
+        infusedTotalBasalAmount: Double,
+        infusedTotalBolusAmount: Double,
+        pumpStateRaw: Int,
+        modeRaw: Int
+    ) {
+        dispatchInfusionInfo(
+            CarelevoPatchRptInfusionInfoRequestModel(
+                runningMinute = runningMinutes,
+                remains = remains,
+                infusedTotalBasalAmount = infusedTotalBasalAmount,
+                infusedTotalBolusAmount = infusedTotalBolusAmount,
+                pumpState = pumpStateRaw.codeToPumpStateCommand().commandToCode(),
+                mode = modeRaw.codeToInfusionModeCommand().commandToCode(),
+                currentInfusedProgramVolume = 0.0, // not persisted by the process use case (legacy drops it too)
+                realInfusedTime = 0
+            )
+        )
+    }
+
+    private fun dispatchInfusionInfo(requestModel: CarelevoPatchRptInfusionInfoRequestModel) {
         bleDisposable += patchRptInfusionInfoProcessUseCase.execute(requestModel)
             .timeout(3, TimeUnit.SECONDS)
             .observeOn(aapsSchedulers.io)

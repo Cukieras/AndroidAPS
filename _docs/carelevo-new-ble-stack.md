@@ -239,6 +239,11 @@ whole driver):**
   decode length/model-range relaxed (model clamps to bytes 11..15). No reconnect-suppression latch needed (the
   QueueWorker is blocked inside the read, so it can't re-dial legacy concurrently).
 - **2.B — Build out commands + convert use cases to `suspend`** (vs `FakeGattConnection`), still flag-gated.
+  ▶ **STARTED + first command DEVICE-VALIDATED 2026-07-14:** `InfusionInfoCommand` (single-response `0x31→0x91`) —
+  flag-on `getPumpStatus` now does the REAL status read over the new stack (`newBle.readInfusionInfo OK
+  remains=293.45 basal=1.2 bolus=3.35 pumpState=0 mode=2`), persisting through the SAME seam as legacy via new
+  `CarelevoPatch.applyInfusionInfoReport` (shared `dispatchInfusionInfo`; identical pumpState/mode enum-roundtrip) →
+  like-for-like, non-degrading. Proves the single-response `request()` path on hardware. ~26 commands remain.
 - **2.C — Rewire coordinator+executor to the session; delete `awaitOnIo`; flip default** (legacy behind flag-off).
 - **2.D — Delete legacy + flag + RxJava; re-enable the disabled patch-info test on `BleClient`.**
 - **Emulator** (parallel) makes 2.B/2.C CI-testable without hardware.

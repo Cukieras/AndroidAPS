@@ -487,8 +487,7 @@ class CarelevoPumpPlugin @Inject constructor(
 
     override suspend fun getPumpStatus(reason: String) {
         if (preferences.get(CarelevoBooleanPreferenceKey.CARELEVO_USE_NEW_BLE_STACK)) {
-            readPatchInfoViaNewStack()
-            _lastDataTime.value = System.currentTimeMillis()
+            readInfusionInfoViaNewStack()
             return
         }
         connectionCoordinator.refreshPumpStatus(
@@ -497,17 +496,18 @@ class CarelevoPumpPlugin @Inject constructor(
     }
 
     /**
-     * Phase-2.A hardware-validation read (flag-gated, engineering-only): drop the legacy link and read
-     * Patch Info (0x33 → 0x93+0x94) over the NEW [app.aaps.pump.carelevo.ble.BleClient] stack's own
-     * connection, logging the outcome. Safe against the CommandQueue: this runs on the QueueWorker
-     * thread while it is blocked inside this status read, so the worker cannot concurrently re-dial the
-     * legacy link — it only reconnects legacy after this returns, by which point the new session has
-     * closed. A clean OK log also answers the auth-on-reconnect question empirically (a fresh GATT that
-     * reads patch info without replaying app-auth ⇒ no re-auth needed). See `_docs/carelevo-new-ble-stack.md`.
+     * Phase-2.B status read over the NEW [app.aaps.pump.carelevo.ble.BleClient] stack (flag-gated,
+     * engineering-only): drop the legacy link, read Infusion Info (0x31 → 0x91) on the new transport's
+     * own connection, and persist it through the SAME seam the legacy `_patchEvent` path uses
+     * (`carelevoPatch.applyInfusionInfoReport`) — so this is a like-for-like replacement of the legacy
+     * `refreshPumpStatus` (reservoir/pump-state/totals all refresh), not a throwaway diagnostic. Safe
+     * against the CommandQueue: it runs on the QueueWorker thread while blocked inside this status read,
+     * so the worker cannot concurrently re-dial legacy — it only reconnects legacy after this returns,
+     * by which point the new session has closed. See `_docs/carelevo-new-ble-stack.md` (Phase 2).
      */
-    private suspend fun readPatchInfoViaNewStack() {
+    private suspend fun readInfusionInfoViaNewStack() {
         val address = carelevoPatch.getPatchInfoAddress() ?: run {
-            aapsLogger.warn(LTag.PUMPCOMM, "newBle.readPatchInfo skipped: no patch address")
+            aapsLogger.warn(LTag.PUMPCOMM, "newBle.readInfusionInfo skipped: no patch address")
             return
         }
         try {
@@ -515,14 +515,23 @@ class CarelevoPumpPlugin @Inject constructor(
             // dials the same device, then let the stack release the old client interface.
             connectionCoordinator.disconnect("new-ble-session")
             delay(NEW_BLE_SETTLE_MS)
-            val info = bleSession.readPatchInfo(address)
+            val info = bleSession.readInfusionInfo(address)
+            carelevoPatch.applyInfusionInfoReport(
+                runningMinutes = info.runningMinutes,
+                remains = info.insulinRemaining,
+                infusedTotalBasalAmount = info.infusedTotalBasalAmount,
+                infusedTotalBolusAmount = info.infusedTotalBolusAmount,
+                pumpStateRaw = info.pumpStateRaw,
+                modeRaw = info.modeRaw
+            )
+            _lastDataTime.value = System.currentTimeMillis()
             aapsLogger.info(
                 LTag.PUMPCOMM,
-                "newBle.readPatchInfo OK serial=${info.serialNumber} fw=${info.firmwareVersion} " +
-                    "model=${info.modelName} result1=${info.serialResultCode} result2=${info.detailResultCode}"
+                "newBle.readInfusionInfo OK remains=${info.insulinRemaining} basal=${info.infusedTotalBasalAmount} " +
+                    "bolus=${info.infusedTotalBolusAmount} pumpState=${info.pumpStateRaw} mode=${info.modeRaw} running=${info.runningMinutes}"
             )
         } catch (e: Throwable) {
-            aapsLogger.error(LTag.PUMPCOMM, "newBle.readPatchInfo FAILED", e)
+            aapsLogger.error(LTag.PUMPCOMM, "newBle.readInfusionInfo FAILED", e)
         }
     }
 
